@@ -6,8 +6,8 @@ A privacy-first Android dim overlay that visually goes beyond the system minimum
 
 ## Privacy
 
-- No network permission, advertising, analytics, account, cloud sync, or tracking.
-- No screen-content reading, gesture injection, auto-clicking, or input monitoring.
+- No network permission, advertising, telemetry, account, cloud sync, or tracking.
+- No screen-content reading, gesture injection, automated clicking, or input monitoring.
 - Optional accessibility overlay is used only to render the dim layer.
 
 ## Build

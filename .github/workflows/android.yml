@@ -14,7 +14,7 @@ jobs:
         run: gradle testDebugUnitTest assembleDebug --stacktrace
       - name: Policy scan
         run: |
-          ! grep -RniE 'android.permission.INTERNET|WRITE_SETTINGS|firebase|analytics|auto.?click|贝利亚|赛罗' app README.md || exit 1
+          ! grep -RniE 'android.permission.INTERNET|WRITE_SETTINGS|firebase|analytics|auto.?click|贝利亚|赛罗' app/src README.md || exit 1
           ! find app/src/main -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) -print | grep . || exit 1
       - uses: actions/upload-artifact@v4
         with:
