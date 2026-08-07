@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">暗幕</string>
+    <string name="accessibility_description">仅用于在屏幕上显示护眼遮罩，不读取屏幕内容、不执行点击、不控制其他应用。</string>
+    <string name="notification_channel">暗幕运行状态</string>
+    <string name="notification_title">暗幕正在运行</string>
+    <string name="close_overlay">关闭遮罩</string>
+</resources>
