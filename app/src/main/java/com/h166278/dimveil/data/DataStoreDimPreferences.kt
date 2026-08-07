@@ -20,14 +20,18 @@ class DataStoreDimPreferences(private val context: Context) : DimPreferences {
         val custom = DimMode.clamp(values[customDepthKey] ?: DimMode.CUSTOM.defaultDepth)
         DimSettings(mode, DimMode.clamp(values[depthKey] ?: mode.depth(custom)), custom)
     }
-    override suspend fun selectMode(mode: DimMode) = context.dimDataStore.edit { values ->
-        val custom = DimMode.clamp(values[customDepthKey] ?: DimMode.CUSTOM.defaultDepth)
-        values[modeKey] = mode.ordinal
-        values[depthKey] = mode.depth(custom)
+    override suspend fun selectMode(mode: DimMode) {
+        context.dimDataStore.edit { values ->
+            val custom = DimMode.clamp(values[customDepthKey] ?: DimMode.CUSTOM.defaultDepth)
+            values[modeKey] = mode.ordinal
+            values[depthKey] = mode.depth(custom)
+        }
     }
-    override suspend fun setDepth(depth: Int) = context.dimDataStore.edit { values ->
-        val safe = DimMode.clamp(depth)
-        values[depthKey] = safe
-        if (DimMode.entries.getOrElse(values[modeKey] ?: 0) { DimMode.NIGHT } == DimMode.CUSTOM) values[customDepthKey] = safe
+    override suspend fun setDepth(depth: Int) {
+        context.dimDataStore.edit { values ->
+            val safe = DimMode.clamp(depth)
+            values[depthKey] = safe
+            if (DimMode.entries.getOrElse(values[modeKey] ?: 0) { DimMode.NIGHT } == DimMode.CUSTOM) values[customDepthKey] = safe
+        }
     }
 }
