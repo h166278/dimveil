@@ -137,7 +137,7 @@ fun HomeScreen(
     if (showAccessibility) {
         AlertDialog(
             onDismissRequest = { showAccessibility = false },
-            containerColor = Panel,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = { Text("无障碍权限", color = MaterialTheme.colorScheme.onBackground) },
             text = {
                 Text(
