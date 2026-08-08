@@ -29,11 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrightnessLow
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.MenuBook
@@ -348,7 +344,7 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(modeIcon(item, selected), contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
+                Icon(modeIcon(item), contentDescription = null, tint = fg, modifier = Modifier.size(19.dp))
                 Spacer(Modifier.height(4.dp))
                 Text(item.label, color = fg, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
             }
@@ -356,11 +352,11 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
     }
 }
 
-private fun modeIcon(mode: DimMode, selected: Boolean): ImageVector = when (mode) {
-    DimMode.NIGHT -> if (selected) Icons.Filled.ModeNight else Icons.Outlined.ModeNight
-    DimMode.READING -> if (selected) Icons.Filled.MenuBook else Icons.Outlined.MenuBook
-    DimMode.GAME -> if (selected) Icons.Filled.SportsEsports else Icons.Outlined.SportsEsports
-    DimMode.CUSTOM -> if (selected) Icons.Filled.Tune else Icons.Outlined.Tune
+private fun modeIcon(mode: DimMode): ImageVector = when (mode) {
+    DimMode.NIGHT -> Icons.Outlined.ModeNight
+    DimMode.READING -> Icons.Outlined.MenuBook
+    DimMode.GAME -> Icons.Outlined.SportsEsports
+    DimMode.CUSTOM -> Icons.Outlined.Tune
 }
 
 @Composable
