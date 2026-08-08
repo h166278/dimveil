@@ -8,6 +8,23 @@ updates:
       # lifecycle 2.11+ 要求 compileSdk 37 + AGP 9.1.0，当前工具链（36/8.13.2）不满足，待升级后再放开
       - dependency-name: "androidx.lifecycle:*"
         versions: [">=2.11.0"]
+      # AGP 9.x 为破坏性大版本（需 Gradle 9 / 新 DSL），锁定 8.x
+      - dependency-name: "com.android.application"
+        versions: [">=9.0.0"]
+      # Gradle 9 大版本变更，锁定 8.x
+      - dependency-name: "gradle-wrapper"
+        versions: [">=9.0.0"]
+      # Kotlin 2.3+ 工具链变更，锁定 2.2.x
+      - dependency-name: "org.jetbrains.kotlin.android"
+        versions: [">=2.3.0"]
+      - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
+        versions: [">=2.3.0"]
+      # core-ktx 1.19+ 要求更高 compileSdk/工具链，锁定 1.18.x
+      - dependency-name: "androidx.core:core-ktx"
+        versions: [">=1.19.0"]
+      # coroutines-test 1.9+ 与当前 Kotlin/工具链不兼容（CI 失败），锁定 1.8.x
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines-test"
+        versions: [">=1.9.0"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
