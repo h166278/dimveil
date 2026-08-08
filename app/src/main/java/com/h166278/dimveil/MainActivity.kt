@@ -13,11 +13,15 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
+import com.h166278.dimveil.overlay.OverlayPermissionAutoReturn
+import com.h166278.dimveil.overlay.OverlayRuntime
+import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
 
 class MainActivity : ComponentActivity() {
     private val viewModel by viewModels<MainViewModel>()
+    private var pendingStartAfterGrant = false
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {
@@ -57,10 +61,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        OverlayPermissionAutoReturn.disarm()
         viewModel.refreshPermissions()
+        // 从悬浮窗授权页回来：授权成功则自动启动遮罩，免去再点一次开关
+        if (pendingStartAfterGrant) {
+            pendingStartAfterGrant = false
+            if (OverlayService.canDraw(this) && !OverlayRuntime.state.value.active) {
+                val s = viewModel.uiState.value
+                OverlayService.start(this, s.depth, s.mode)
+            }
+        }
     }
 
     private fun openOverlayPermission() {
+        OverlayPermissionAutoReturn.arm(this)
+        pendingStartAfterGrant = true
         startActivity(
             Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
