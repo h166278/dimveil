@@ -1,6 +1,8 @@
 package com.h166278.dimveil.overlay
 
 import android.app.Activity
+import android.app.ActivityManager
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -41,8 +43,10 @@ object OverlayPermissionAutoReturn {
                 }
                 if (Settings.canDrawOverlays(owner)) {
                     polling = false
-                    // 不从后台启动新 Activity；直接恢复刚才跳走的暗幕任务。
-                    owner.getAppTask().moveToFront()
+                    // 不从后台启动新 Activity；直接把本应用任务带回前台。
+                    val am = owner.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                    val appTask = am.appTasks.firstOrNull { it.taskInfo.id == owner.taskId }
+                    appTask?.moveToFront()
                     return
                 }
                 handler.postDelayed(this, POLL_INTERVAL_MS)
