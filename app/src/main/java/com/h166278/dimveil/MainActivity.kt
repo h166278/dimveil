@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.h166278.dimveil.overlay.AccessibilityOverlayHost
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
 
