@@ -5,4 +5,6 @@
     <string name="notification_title">暗幕正在运行</string>
     <string name="close_overlay">关闭遮罩</string>
     <string name="accessibility_connecting">无障碍服务连接中，请稍候再试</string>
+    <string name="accessibility_disabled">已关闭无障碍遮罩，回退悬浮窗遮罩</string>
+    <string name="accessibility_enable_hint">请在系统设置中开启无障碍开关</string>
 </resources>

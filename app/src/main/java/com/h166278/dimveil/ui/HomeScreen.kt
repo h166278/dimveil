@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -87,7 +89,8 @@ fun HomeScreen(
     onMode: (DimMode) -> Unit,
     onDepthPreview: (Int) -> Unit,
     onDepthCommit: () -> Unit,
-    onOpenAccessibility: () -> Unit
+    onOpenAccessibility: () -> Unit,
+    onDoubleTapAccessibility: () -> Unit
 ) {
     var showAccessibility by remember { mutableStateOf(false) }
     val active = state.active
@@ -95,7 +98,16 @@ fun HomeScreen(
     val depth = state.depth
     val accessibilityEnabled = state.accessibilityEnabled
 
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    // 双击空白处切换无障碍权限：子组件（开关/滑杆/按钮/模式卡）消费点击事件，
+    // detectTapGestures 检测到事件被消费会取消双击判定，因此只在空白处触发。
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = { onDoubleTapAccessibility() })
+            }
+    ) {
         Column(
             Modifier
                 .fillMaxSize()

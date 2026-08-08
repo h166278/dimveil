@@ -65,6 +65,17 @@ class MainActivity : ComponentActivity() {
                     onOpenAccessibility = {
                         if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn(this)
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    },
+                    onDoubleTapAccessibility = {
+                        if (viewModel.toggleAccessibility()) {
+                            // 已开启 → 请求系统禁用本服务，遮罩回退悬浮窗路径
+                            Toast.makeText(this, R.string.accessibility_disabled, Toast.LENGTH_SHORT).show()
+                        } else {
+                            // 未开启 → 系统不允许应用自动开启，跳设置页由用户手动拨开
+                            AccessibilityOverlayHost.armAutoReturn(this)
+                            Toast.makeText(this, R.string.accessibility_enable_hint, Toast.LENGTH_SHORT).show()
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }
                     }
                 )
             }

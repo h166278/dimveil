@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -109,6 +110,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (!state.canStart) return false
         OverlayService.start(app, state.depth, state.mode)
+        return true
+    }
+
+    /**
+     * 双击空白处切换无障碍权限：
+     * 已开启 → 请求系统禁用本服务（[DimAccessibilityService.disable]），返回 true；
+     * 未开启 → 返回 false，由调用方跳转系统无障碍设置页引导用户手动开启
+     * （Android 不允许应用编程式开启无障碍服务）。
+     */
+    fun toggleAccessibility(): Boolean {
+        if (!isAccessibilityEnabled()) return false
+        DimAccessibilityService.disable()
+        // disableSelf 异步生效：稍候再刷新权限状态，避免界面仍显示"已开启"
+        viewModelScope.launch {
+            delay(600)
+            refreshPermissions()
+        }
         return true
     }
 
