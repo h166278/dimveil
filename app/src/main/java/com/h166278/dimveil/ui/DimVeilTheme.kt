@@ -4,6 +4,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 private val DimVeilColors = darkColorScheme(
     primary = Color(0xFF8BE8C1),
@@ -18,7 +21,16 @@ private val DimVeilColors = darkColorScheme(
     outline = Color(0xFF3D514E)
 )
 
+private val DimVeilTypography = androidx.compose.material3.Typography(
+    headlineMedium = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold),
+    titleLarge = TextStyle(fontSize = 21.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold),
+    titleMedium = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
+    bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 21.sp),
+    bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 18.sp)
+)
+
 @Composable
 fun DimVeilTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = DimVeilColors, content = content)
+    MaterialTheme(colorScheme = DimVeilColors, typography = DimVeilTypography, content = content)
 }
