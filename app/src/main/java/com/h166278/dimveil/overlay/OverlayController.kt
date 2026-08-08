@@ -25,7 +25,6 @@ class OverlayController(
             it.setBackgroundColor(Color.BLACK)
             view = it
         }
-        layer.alpha = 1f
         val layout = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -33,6 +32,7 @@ class OverlayController(
             params.flags,
             android.graphics.PixelFormat.TRANSLUCENT
         ).apply {
+            // 遮罩深度由窗口级 alpha 承担（触摸穿透判定读取窗口 alpha）。
             alpha = params.alpha
             // Overlay windows must opt out of system-bar insets to dim the status bar.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) fitInsetsTypes = 0
@@ -61,14 +61,22 @@ class OverlayController(
     }
 
     companion object {
+        /** 系统触摸穿透上限（普通覆盖最大安全深度）。该值在系统运行期间恒定，进程内缓存。 */
+        @Volatile
+        private var cachedNormalMaxDepth: Int? = null
+
         fun normalMaxDepth(context: Context): Int {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                return OverlayWindowParams.MAX_DEPTH
+            cachedNormalMaxDepth?.let { return it }
+            val value = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                OverlayWindowParams.MAX_DEPTH
+            } else {
+                val opacity = context.getSystemService(InputManager::class.java)
+                    .maximumObscuringOpacityForTouch
+                floor(opacity * 100f).toInt()
+                    .coerceIn(0, OverlayWindowParams.NORMAL_MAX_DEPTH)
             }
-            val opacity = context.getSystemService(InputManager::class.java)
-                .maximumObscuringOpacityForTouch
-            return floor(opacity * 100f).toInt()
-                .coerceIn(0, OverlayWindowParams.NORMAL_MAX_DEPTH)
+            cachedNormalMaxDepth = value
+            return value
         }
     }
 }

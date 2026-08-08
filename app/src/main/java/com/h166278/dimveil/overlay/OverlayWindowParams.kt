@@ -1,6 +1,5 @@
 package com.h166278.dimveil.overlay
 
-import android.graphics.Color
 import android.view.WindowManager
 
 data class OverlayWindowParams(val alpha: Float, val flags: Int, val type: Int) {
@@ -27,7 +26,6 @@ data class OverlayWindowParams(val alpha: Float, val flags: Int, val type: Int) 
             return OverlayWindowParams(depth.coerceIn(0, maxDepth) / 100f, flags, type)
         }
 
-        const val BLACK = Color.BLACK
         const val MAX_DEPTH = 90
         const val NORMAL_MAX_DEPTH = 80
     }

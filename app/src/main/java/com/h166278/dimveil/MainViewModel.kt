@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private data class Permissions(
@@ -37,6 +39,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val permissions = MutableStateFlow(Permissions())
     private val previewDepth = MutableStateFlow<Int?>(null)
     private val modeOverride = MutableStateFlow<DimMode?>(null)
+
+    // 深度滑杆节流：服务端窗口更新昂贵（IPC + updateViewLayout），
+    // 拖动时按移动量/时间合并发送，UI 预览保持即时。
+    private var lastDepthSent = -1
+    private var lastDepthSentAt = 0L
 
     private val settings = preferences.settings.stateIn(
         viewModelScope,
@@ -109,22 +116,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val selectedDepth = selected.depth(settings.value.customDepth)
         previewDepth.value = null
         modeOverride.value = selected
+        resetDepthThrottle()
         if (OverlayRuntime.state.value.active) {
             OverlayService.update(app, selectedDepth, selected)
         }
         viewModelScope.launch {
             preferences.selectMode(selected)
-            modeOverride.value = null
+            // 仅当用户未继续切换模式时清除 override，避免快速连点时 UI 回跳
+            if (modeOverride.value == selected) modeOverride.value = null
         }
     }
 
     fun previewDepth(value: Int) {
         val safe = DimMode.clamp(value)
         previewDepth.value = safe
-        val mode = uiState.value.mode
-        if (OverlayRuntime.state.value.active) {
-            OverlayService.update(app, safe, mode)
-        }
+        pushDepthUpdate(safe)
     }
 
     fun commitDepth() {
@@ -132,7 +138,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             preferences.setDepth(value)
             previewDepth.value = null
+            // 节流可能吞掉拖动中间值，松手时强制补发最终深度
+            if (OverlayRuntime.state.value.active) {
+                OverlayService.update(app, value, uiState.value.mode)
+            }
         }
+    }
+
+    /** 拖动节流：位移 ≥3% 或距上次发送 ≥150ms 才推送，避免滑杆每帧触发一次 IPC */
+    private fun pushDepthUpdate(depth: Int) {
+        if (!OverlayRuntime.state.value.active) return
+        val now = SystemClock.elapsedRealtime()
+        val moved = abs(depth - lastDepthSent)
+        if (moved >= 3 || now - lastDepthSentAt >= 150L) {
+            lastDepthSent = depth
+            lastDepthSentAt = now
+            OverlayService.update(app, depth, uiState.value.mode)
+        }
+    }
+
+    private fun resetDepthThrottle() {
+        lastDepthSent = -1
+        lastDepthSentAt = 0L
     }
 
     private fun isAccessibilityEnabled(): Boolean {

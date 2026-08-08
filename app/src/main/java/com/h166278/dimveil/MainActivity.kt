@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,14 +23,22 @@ import com.h166278.dimveil.ui.HomeScreen
 class MainActivity : ComponentActivity() {
     private val viewModel by viewModels<MainViewModel>()
     private var pendingStartAfterGrant = false
+    private var notificationDeniedPermanently = false
+
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) {
+    ) { granted ->
+        // 拒绝且系统不再建议解释 = 用户已选择"不再询问"，之后不再发起无效请求
+        if (!granted && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            notificationDeniedPermanently = true
+        }
         viewModel.refreshPermissions()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 授权页转屏/重建后仍记得"授权成功要自动启动遮罩"
+        pendingStartAfterGrant = savedInstanceState?.getBoolean(KEY_PENDING_START, false) ?: false
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             DimVeilTheme {
@@ -41,6 +50,9 @@ class MainActivity : ComponentActivity() {
                             if (!wasActive) {
                                 requestNotificationPermissionIfNeeded(state.notificationsAllowed)
                             }
+                        } else if (state.accessibilityEnabled && !state.accessibilityReady) {
+                            // 无障碍已开启但服务尚未连接（如系统重启后）：提示而非跳设置页
+                            Toast.makeText(this, R.string.accessibility_connecting, Toast.LENGTH_SHORT).show()
                         } else if (state.accessibilityEnabled) {
                             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                         } else {
@@ -51,12 +63,17 @@ class MainActivity : ComponentActivity() {
                     onDepthPreview = viewModel::previewDepth,
                     onDepthCommit = viewModel::commitDepth,
                     onOpenAccessibility = {
-                        if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn()
+                        if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn(this)
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
                 )
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_PENDING_START, pendingStartAfterGrant)
     }
 
     override fun onResume() {
@@ -85,8 +102,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestNotificationPermissionIfNeeded(alreadyAllowed: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !alreadyAllowed) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !alreadyAllowed && !notificationDeniedPermanently
+        ) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    companion object {
+        private const val KEY_PENDING_START = "pending_start_after_grant"
     }
 }

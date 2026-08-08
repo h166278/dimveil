@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.core.content.ContextCompat
+import com.h166278.dimveil.data.DataStoreDimPreferences
 import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
 import com.h166278.dimveil.overlay.OverlayController
@@ -14,12 +15,20 @@ import com.h166278.dimveil.overlay.OverlayError
 import com.h166278.dimveil.overlay.OverlayHostKind
 import com.h166278.dimveil.overlay.OverlayPolicy
 import com.h166278.dimveil.overlay.OverlayRuntime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class OverlayService : Service() {
     private lateinit var normalController: OverlayController
     private var requestedDepth = 0
     private var mode = DimMode.NIGHT
     private var foregroundStarted = false
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
@@ -34,14 +43,30 @@ class OverlayService : Service() {
                 mode = intent.getStringExtra(EXTRA_MODE)
                     ?.let { name -> DimMode.entries.firstOrNull { it.name == name } }
                     ?: DimMode.NIGHT
-                if (!ensureForeground()) return START_NOT_STICKY
+                if (!ensureForeground()) return START_STICKY
                 applyBestHost()
             }
             ACTION_HOST_CHANGED -> if (OverlayRuntime.state.value.active) applyBestHost()
             ACTION_STOP -> stopOverlay()
-            null -> stopOverlay()
+            // 进程被系统回收后重建：从持久化设置恢复遮罩
+            null -> restoreAndResume()
         }
-        return START_NOT_STICKY
+        // START_STICKY：遮罩是用户主动开启的保护性覆盖，进程被系统回收后应自动恢复，
+        // 而不是静默消失（重建时 onStartCommand(null) 走恢复路径）。
+        return START_STICKY
+    }
+
+    private fun restoreAndResume() {
+        if (OverlayRuntime.state.value.active) return
+        serviceScope.launch {
+            val settings = DataStoreDimPreferences(this@OverlayService).settings.first()
+            requestedDepth = settings.depth
+            mode = settings.mode
+            withContext(Dispatchers.Main) {
+                if (!ensureForeground()) return@withContext
+                applyBestHost()
+            }
+        }
     }
 
     private fun ensureForeground(): Boolean = runCatching {
@@ -114,6 +139,7 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         normalController.remove()
+        serviceScope.cancel()
         if (OverlayRuntime.state.value.active) OverlayRuntime.stopped()
         super.onDestroy()
     }

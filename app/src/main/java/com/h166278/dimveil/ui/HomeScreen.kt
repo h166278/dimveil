@@ -75,16 +75,10 @@ import com.h166278.dimveil.overlay.OverlayError
 import com.h166278.dimveil.overlay.OverlayHostKind
 
 // —— 暗幕色板 ——
-private val Ink = Color(0xFF070B0D)
-private val Panel = Color(0xFF101719)
-private val PillBg = Color(0xFF0C1214)
-private val PanelBorder = Color(0xFF24342F)
-private val Mint = Color(0xFF8BE8C1)
-private val MintBright = Color(0xFFB7FFE1)
-private val Amber = Color(0xFFE9BE6A)
+// 与主题等值的颜色直接引用 MaterialTheme.colorScheme（primary/surface/tertiary 等），
+// 避免硬编码与主题 token 漂移；以下仅为无对应 token 的自定义扩展色。
 private val MutedTeal = Color(0xFF6C9285)
 private val TrackInactive = Color(0xFF30433F)
-private val ModeSelectedBg = Color(0xFF1D3C35)
 
 @Composable
 fun HomeScreen(
@@ -101,7 +95,7 @@ fun HomeScreen(
     val depth = state.depth
     val accessibilityEnabled = state.accessibilityEnabled
 
-    Box(Modifier.fillMaxSize().background(Ink)) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
             Modifier
                 .fillMaxSize()
@@ -198,7 +192,7 @@ private fun EclipseMark(modifier: Modifier = Modifier) {
         val radius = size.minDimension * 0.42f
         // 日冕：只在黑色天体边缘露出一圈克制的冷青光
         drawCircle(
-            color = Mint.copy(alpha = 0.72f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
             radius = radius + 1.5.dp.toPx(),
             center = center,
             style = Stroke(width = 1.2.dp.toPx())
@@ -245,9 +239,9 @@ private fun GuardTitle(active: Boolean, blocked: Boolean) {
 private fun OverlayStateLabel(state: MainUiState) {
     val active = state.active && state.host != null
     val color = when {
-        active -> Mint
+        active -> MaterialTheme.colorScheme.primary
         state.canStart -> MutedTeal
-        else -> Amber
+        else -> MaterialTheme.colorScheme.tertiary
     }
     val label = when {
         state.host == OverlayHostKind.ACCESSIBILITY && active -> "当前遮罩：无障碍遮罩"
@@ -267,14 +261,14 @@ private fun OverlayStateLabel(state: MainUiState) {
 private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val ringColor by animateColorAsState(
         when {
-            active -> Mint
+            active -> MaterialTheme.colorScheme.primary
             enabled -> MutedTeal
-            else -> Amber.copy(alpha = 0.72f)
+            else -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.72f)
         },
         label = "ring"
     )
     val coreColor by animateColorAsState(
-        if (active) MintBright else MaterialTheme.colorScheme.onSurfaceVariant,
+        if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "core"
     )
     val fillTop by animateColorAsState(
@@ -286,6 +280,7 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.94f else 1f, label = "scale")
+    val pressOffset by animateFloatAsState(if (pressed) 0.16f else 0f, label = "pressOffset")
 
     Box(
         Modifier
@@ -323,8 +318,7 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
             val moonRadius = radius * 0.30f
             val moonCenter = center.copy(x = center.x - radius * 0.22f)
             val eclipseCenter = center.copy(
-                x = moonCenter.x + radius * (0.44f * (1f - eclipseProgress) + 0.22f) -
-                    if (pressed) radius * 0.16f else 0f
+                x = moonCenter.x + radius * (0.44f * (1f - eclipseProgress) + 0.22f) - radius * pressOffset
             )
             drawCircle(Color.White.copy(alpha = 0.95f * (1f - eclipseProgress)), radius = moonRadius, center = moonCenter)
             drawCircle(Color(0xFF080D0F), radius = moonRadius * 0.96f, center = eclipseCenter)
@@ -415,8 +409,8 @@ private fun DepthCard(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
-            .background(Panel)
-            .border(1.dp, PanelBorder, RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
             .padding(horizontal = 18.dp, vertical = 16.dp)
     ) {
         Row(
@@ -430,7 +424,7 @@ private fun DepthCard(
                 Text("调节暗幕浓度 0–90%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("$animatedDepth", color = Mint, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                Text("$animatedDepth", color = MaterialTheme.colorScheme.primary, fontSize = 34.sp, fontWeight = FontWeight.Bold)
                 Text(
                     "%",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -446,13 +440,13 @@ private fun DepthCard(
             onValueChange = { onDepthPreview(it.toInt()) },
             onValueChangeFinished = onDepthCommit,
             valueRange = 0f..90f,
-            colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint, inactiveTrackColor = TrackInactive)
+            colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
         )
         if (depth >= 80) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = Amber, modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("深度较高，请确认仍能看清屏幕", color = Amber, fontSize = 12.sp)
+                Text("深度较高，请确认仍能看清屏幕", color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
             }
         }
     }
@@ -464,10 +458,11 @@ private fun StatusCard(
     onOpenAccessibility: () -> Unit
 ) {
     val accessibilityMissing = !state.accessibilityEnabled
-    val accent = if (accessibilityMissing) MutedTeal else Mint
+    val accent = if (accessibilityMissing) MutedTeal else MaterialTheme.colorScheme.primary
     val title = if (accessibilityMissing) "未开启无障碍权限" else "无障碍权限已开启"
     val detail = when {
         accessibilityMissing -> "开启后可获得更完整的遮罩范围"
+        state.accessibilityEnabled && !state.accessibilityReady -> "无障碍服务连接中，稍候自动生效"
         state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
         state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
         state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
@@ -488,7 +483,7 @@ private fun StatusCard(
                 Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(ModeSelectedBg),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Filled.Verified, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))

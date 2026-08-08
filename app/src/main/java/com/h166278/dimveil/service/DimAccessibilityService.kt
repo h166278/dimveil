@@ -1,6 +1,8 @@
 package com.h166278.dimveil.service
 
 import android.accessibilityservice.AccessibilityService
+import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -19,13 +21,8 @@ class DimAccessibilityService : AccessibilityService() {
         )
         controller = overlayController
         AccessibilityOverlayHost.attach(this, overlayController)
-        if (AccessibilityOverlayHost.consumeAutoReturn()) {
-            startActivity(
-                Intent(this, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                }
-            )
-        }
+        val taskId = AccessibilityOverlayHost.consumeAutoReturn()
+        if (taskId >= 0) restoreTask(taskId)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) = Unit
@@ -40,6 +37,22 @@ class DimAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         detachHost()
         super.onDestroy()
+    }
+
+    private fun restoreTask(taskId: Int) {
+        val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appTask = am.appTasks.firstOrNull { it.taskInfo.id == taskId }
+        if (appTask != null) {
+            // 复用原任务，避免后台 startActivity 被 MIUI 等系统拦截
+            appTask.moveToFront()
+        } else {
+            // 原任务已被清理（如系统回收）：新建任务带回
+            startActivity(
+                Intent(this, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                }
+            )
+        }
     }
 
     private fun detachHost() {

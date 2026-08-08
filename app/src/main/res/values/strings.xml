@@ -4,4 +4,5 @@
     <string name="notification_channel">暗幕运行状态</string>
     <string name="notification_title">暗幕正在运行</string>
     <string name="close_overlay">关闭遮罩</string>
+    <string name="accessibility_connecting">无障碍服务连接中，请稍候再试</string>
 </resources>

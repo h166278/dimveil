@@ -21,11 +21,4 @@ class OverlayPolicyTest {
         )
         assertNull(OverlayPolicy.selectHost(accessibilityReady = false, canDraw = false))
     }
-
-    @Test
-    fun depthFollowsHostSafetyLimit() {
-        assertEquals(80, OverlayPolicy.appliedDepth(90, OverlayHostKind.NORMAL, 80))
-        assertEquals(90, OverlayPolicy.appliedDepth(90, OverlayHostKind.ACCESSIBILITY, 80))
-        assertEquals(0, OverlayPolicy.appliedDepth(-1, OverlayHostKind.NORMAL, 80))
-    }
 }

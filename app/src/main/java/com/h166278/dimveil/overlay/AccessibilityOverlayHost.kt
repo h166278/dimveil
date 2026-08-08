@@ -1,5 +1,6 @@
 package com.h166278.dimveil.overlay
 
+import android.app.Activity
 import android.content.Context
 import com.h166278.dimveil.service.OverlayService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,17 +11,23 @@ object AccessibilityOverlayHost {
     private var controller: OverlayController? = null
     private val mutableAvailable = MutableStateFlow(false)
     private var pendingReturnDeadline = 0L
+    private var pendingReturnTaskId = -1
 
     /** 跳转系统无障碍设置前调用：开启成功后自动回到暗幕 */
-    fun armAutoReturn(timeoutMillis: Long = 60_000) {
+    fun armAutoReturn(activity: Activity? = null, timeoutMillis: Long = 60_000) {
         pendingReturnDeadline = System.currentTimeMillis() + timeoutMillis
+        // 记录目标任务 id：服务连接后经 ActivityManager 恢复任务，
+        // 避免在 MIUI 等系统上从后台直接 startActivity 被后台启动策略拦截
+        pendingReturnTaskId = activity?.taskId ?: -1
     }
 
-    /** 无障碍服务连接后由服务调用：命中等待窗口则带回暗幕，并清除标记 */
-    fun consumeAutoReturn(): Boolean {
+    /** 无障碍服务连接后由服务调用：命中等待窗口则返回目标任务 id（-1 = 未命中/已过期） */
+    fun consumeAutoReturn(): Int {
         val armed = System.currentTimeMillis() < pendingReturnDeadline
+        val taskId = if (armed) pendingReturnTaskId else -1
         pendingReturnDeadline = 0
-        return armed
+        pendingReturnTaskId = -1
+        return taskId
     }
 
     val available: Boolean get() = controller != null
