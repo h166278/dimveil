@@ -23,7 +23,7 @@ import com.h166278.dimveil.overlay.ShizukuAccessibility
 import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
-import dev.rikka.shizuku.Shizuku
+import rikka.shizuku.Shizuku
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {

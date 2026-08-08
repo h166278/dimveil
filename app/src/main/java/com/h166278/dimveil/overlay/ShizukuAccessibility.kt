@@ -1,7 +1,7 @@
 package com.h166278.dimveil.overlay
 
 import android.content.pm.PackageManager
-import dev.rikka.shizuku.Shizuku
+import rikka.shizuku.Shizuku
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -66,7 +66,8 @@ object ShizukuAccessibility {
 
     /** 以 shell 身份执行命令，返回 stdout（去空白）；非零退出码抛异常 */
     private fun exec(vararg args: String): String {
-        val process = newProcess(args)
+        // vararg 展开后是 Array<out String>，反射签名需要 Array<String>
+        val process = newProcess(arrayOf(*args))
         val output = process.inputStream.bufferedReader().readText().trim()
         val exit = process.waitFor()
         if (exit != 0) throw IOException("shizuku exec failed (exit=$exit): ${args.joinToString(" ")}")

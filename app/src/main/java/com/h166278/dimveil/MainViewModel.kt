@@ -18,6 +18,7 @@ import com.h166278.dimveil.overlay.AccessibilityOverlayHost
 import com.h166278.dimveil.overlay.OverlayController
 import com.h166278.dimveil.overlay.OverlayRuntime
 import com.h166278.dimveil.overlay.ShizukuAccessibility
+import com.h166278.dimveil.service.DimAccessibilityService
 import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.MainUiState
 import kotlinx.coroutines.flow.MutableStateFlow
