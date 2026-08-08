@@ -1,9 +1,9 @@
 <resources>
     <style name="Theme.DimVeil" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#8BE8C1</item>
-        <item name="android:navigationBarColor">#070B0D</item>
-        <item name="android:statusBarColor">#070B0D</item>
+        <item name="android:colorAccent">#0A84FF</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

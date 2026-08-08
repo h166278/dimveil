@@ -23,6 +23,6 @@ object DimNotificationFactory {
     fun notification(context: Context, depth: Int, mode: String): Notification {
         val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val close = PendingIntent.getService(context, 1, OverlayService.stopIntent(context), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        return NotificationCompat.Builder(context, CHANNEL_ID).setSmallIcon(R.drawable.ic_dimveil).setContentTitle(context.getString(R.string.notification_title)).setContentText("遮罩深度 ${depth}% · $mode").setContentIntent(open).setOngoing(true).addAction(0, context.getString(R.string.close_overlay), close).build()
+        return NotificationCompat.Builder(context, CHANNEL_ID).setSmallIcon(R.drawable.ic_stat_dimveil).setContentTitle(context.getString(R.string.notification_title)).setContentText("遮罩深度 ${depth}% · $mode").setContentIntent(open).setOngoing(true).addAction(0, context.getString(R.string.close_overlay), close).build()
     }
 }
