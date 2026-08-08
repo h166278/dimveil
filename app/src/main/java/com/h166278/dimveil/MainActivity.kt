@@ -27,15 +27,17 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val preferences by lazy { DataStoreDimPreferences(this) }
 
+    // 类级 Compose 状态：可在 onResume 等生命周期回调中刷新，UI 自动重组
+    private var active by mutableStateOf(false)
+    private var mode by mutableStateOf(DimMode.NIGHT)
+    private var depth by mutableStateOf(DimMode.NIGHT.defaultDepth)
+    private var accessibilityEnabled by mutableStateOf(false)
+    private var canDraw by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        refreshPermissionStates()
         setContent {
-            var active by remember { mutableStateOf(false) }
-            var mode by remember { mutableStateOf(DimMode.NIGHT) }
-            var depth by remember { mutableStateOf(DimMode.NIGHT.defaultDepth) }
-            var accessibilityEnabled by remember { mutableStateOf(isAccessibilityEnabled()) }
-            val canDraw = OverlayService.canDraw(this)
-
             LaunchedEffect(Unit) {
                 val settings = preferences.settings.first()
                 mode = settings.mode
@@ -78,7 +80,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Compose refreshes the icon when the activity returns from system settings.
+        // 从系统权限/无障碍设置返回后刷新状态，UI 立即反映最新权限
+        refreshPermissionStates()
+    }
+
+    private fun refreshPermissionStates() {
+        canDraw = OverlayService.canDraw(this)
+        accessibilityEnabled = isAccessibilityEnabled()
     }
 
     private fun isAccessibilityEnabled(): Boolean {
