@@ -1,11 +1,10 @@
 package com.h166278.dimveil.overlay
 
-import android.content.Context
-import android.content.Intent
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import com.h166278.dimveil.MainActivity
+import java.lang.ref.WeakReference
 
 /**
  * 悬浮窗授权自动返回：跳转系统授权页（ACTION_MANAGE_OVERLAY_PERMISSION）前 arm，
@@ -22,12 +21,12 @@ object OverlayPermissionAutoReturn {
     private var deadline = 0L
     private var polling = false
 
-    /** 跳转系统悬浮窗授权页前调用 */
-    fun arm(context: Context, timeoutMillis: Long = DEFAULT_TIMEOUT_MS) {
+    /** 跳转系统悬浮窗授权页前调用。保留原任务，授权成功后直接恢复它。 */
+    fun arm(activity: Activity, timeoutMillis: Long = DEFAULT_TIMEOUT_MS) {
         deadline = System.currentTimeMillis() + timeoutMillis
         if (polling) return
         polling = true
-        val appContext = context.applicationContext
+        val activityRef = WeakReference(activity)
         handler.post(object : Runnable {
             override fun run() {
                 if (!polling) return
@@ -35,13 +34,15 @@ object OverlayPermissionAutoReturn {
                     polling = false
                     return
                 }
-                if (Settings.canDrawOverlays(appContext)) {
+                val owner = activityRef.get()
+                if (owner == null || owner.isFinishing || owner.isDestroyed) {
                     polling = false
-                    appContext.startActivity(
-                        Intent(appContext, MainActivity::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                        }
-                    )
+                    return
+                }
+                if (Settings.canDrawOverlays(owner)) {
+                    polling = false
+                    // 不从后台启动新 Activity；直接恢复刚才跳走的暗幕任务。
+                    owner.appTask.moveToFront()
                     return
                 }
                 handler.postDelayed(this, POLL_INTERVAL_MS)
