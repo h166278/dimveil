@@ -4,6 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    ignore:
+      # lifecycle 2.11+ 要求 compileSdk 37 + AGP 9.1.0，当前工具链（36/8.13.2）不满足，待升级后再放开
+      - dependency-name: "androidx.lifecycle:*"
+        versions: [">=2.11.0"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
