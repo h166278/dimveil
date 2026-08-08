@@ -15,7 +15,7 @@ jobs:
         run: |
           ! grep -RniE 'android.permission.INTERNET|WRITE_SETTINGS|firebase|analytics|auto.?click|贝利亚|赛罗' app/src README.md || exit 1
           ! find app/src/main -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) -print | grep . || exit 1
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: dimveil-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
