@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an improvement consistent with Dim Veil's privacy and safety model
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: "Features involving network access, analytics, automation, screen reading, input monitoring, or new sensitive permissions require a public security discussion."
+  - type: textarea
+    id: problem
+    attributes: {label: Problem to solve}
+    validations: {required: true}
+  - type: textarea
+    id: proposal
+    attributes: {label: Proposed behavior}
+    validations: {required: true}
+  - type: textarea
+    id: alternatives
+    attributes: {label: Alternatives considered}

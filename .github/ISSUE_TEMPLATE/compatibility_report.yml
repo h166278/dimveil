@@ -1,0 +1,30 @@
+name: Compatibility report
+description: Report overlay behavior on a device or ROM
+title: "[Compatibility]: "
+labels: [compatibility]
+body:
+  - type: markdown
+    attributes:
+      value: "Report observed behavior only. Redact personal content from screenshots."
+  - type: input
+    id: device
+    attributes: {label: Device model}
+    validations: {required: true}
+  - type: input
+    id: os
+    attributes: {label: Android and ROM version}
+    validations: {required: true}
+  - type: dropdown
+    id: host
+    attributes:
+      label: Overlay path tested
+      options: [Normal application overlay, Accessibility overlay, Both]
+    validations: {required: true}
+  - type: input
+    id: depth
+    attributes: {label: Requested depth(s)}
+    validations: {required: true}
+  - type: textarea
+    id: result
+    attributes: {label: Coverage, touch-through, permission, and lifecycle results}
+    validations: {required: true}

@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a reproducible Dim Veil defect
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include private screen content, Shizuku credentials, or secrets. Security issues belong in private reporting, not here."
+  - type: input
+    id: device
+    attributes: {label: Device model, placeholder: "e.g. Xiaomi 13"}
+    validations: {required: true}
+  - type: input
+    id: os
+    attributes: {label: Android and ROM version, placeholder: "e.g. Android 15 / HyperOS ..."}
+    validations: {required: true}
+  - type: dropdown
+    id: host
+    attributes:
+      label: Active overlay path
+      options: [Normal application overlay, Accessibility overlay, Unsure]
+    validations: {required: true}
+  - type: input
+    id: depth
+    attributes: {label: Requested dim depth, placeholder: "e.g. 80%"}
+  - type: textarea
+    id: reproduce
+    attributes: {label: Steps to reproduce}
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes: {label: Expected behavior}
+    validations: {required: true}
+  - type: textarea
+    id: actual
+    attributes: {label: Actual behavior and touch-through result}
+    validations: {required: true}
