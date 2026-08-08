@@ -25,6 +25,7 @@ class OverlayWindowParamsTest {
         assertEquals(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, params.type)
         assertTrue(params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE != 0)
         assertTrue(params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE != 0)
+        assertTrue(params.flags and WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS != 0)
     }
 
     @Test
