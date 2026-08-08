@@ -458,7 +458,7 @@ private fun StatusCard(
                 Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
             TextButton(onClick = onOpenAccessibility) {
-                Text(if (accessibilityMissing) "去开启" else "已开启")
+                Text(if (accessibilityMissing) "去开启" else "查看设置")
             }
         }
     }
