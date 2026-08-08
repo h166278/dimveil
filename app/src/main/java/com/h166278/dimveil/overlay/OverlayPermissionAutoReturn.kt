@@ -42,7 +42,7 @@ object OverlayPermissionAutoReturn {
                 if (Settings.canDrawOverlays(owner)) {
                     polling = false
                     // 不从后台启动新 Activity；直接恢复刚才跳走的暗幕任务。
-                    owner.appTask.moveToFront()
+                    owner.getAppTask().moveToFront()
                     return
                 }
                 handler.postDelayed(this, POLL_INTERVAL_MS)
