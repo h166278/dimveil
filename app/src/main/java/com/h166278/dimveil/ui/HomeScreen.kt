@@ -28,7 +28,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.MenuBook
@@ -338,19 +342,35 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    // M3 segmented-control 语义：一个统一容器，选中项使用 primaryContainer，
+    // 避免四个独立描边卡片产生厚重、割裂的视觉。
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         DimMode.entries.forEach { item ->
             val selected = item == mode
-            val bg by animateColorAsState(if (selected) ModeSelectedBg else PillBg, label = "modeBg")
-            val borderColor by animateColorAsState(if (selected) Mint.copy(alpha = 0.7f) else PanelBorder, label = "modeBorder")
-            val fg by animateColorAsState(if (selected) Mint else MaterialTheme.colorScheme.onSurfaceVariant, label = "modeFg")
+            val bg by animateColorAsState(
+                if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                label = "modeBg"
+            )
+            val fg by animateColorAsState(
+                if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                label = "modeFg"
+            )
             Column(
                 Modifier
                     .weight(1f)
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
                     .background(bg)
-                    .border(1.dp, borderColor, RoundedCornerShape(14.dp))
                     .semantics {
                         this.selected = selected
                         role = Role.RadioButton
@@ -359,19 +379,29 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(modeIcon(item), contentDescription = null, tint = fg, modifier = Modifier.size(19.dp))
-                Spacer(Modifier.height(4.dp))
-                Text(item.label, color = fg, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                Icon(
+                    modeIcon(item, selected),
+                    contentDescription = item.label,
+                    tint = fg,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    item.label,
+                    color = fg,
+                    style = if (selected) MaterialTheme.typography.labelLarge
+                    else MaterialTheme.typography.labelMedium
+                )
             }
         }
     }
 }
 
-private fun modeIcon(mode: DimMode): ImageVector = when (mode) {
-    DimMode.NIGHT -> Icons.Outlined.ModeNight
-    DimMode.READING -> Icons.Outlined.MenuBook
-    DimMode.GAME -> Icons.Outlined.SportsEsports
-    DimMode.CUSTOM -> Icons.Outlined.Tune
+private fun modeIcon(mode: DimMode, selected: Boolean): ImageVector = when (mode) {
+    DimMode.NIGHT -> if (selected) Icons.Filled.DarkMode else Icons.Outlined.ModeNight
+    DimMode.READING -> if (selected) Icons.Filled.MenuBook else Icons.Outlined.MenuBook
+    DimMode.GAME -> if (selected) Icons.Filled.SportsEsports else Icons.Outlined.SportsEsports
+    DimMode.CUSTOM -> if (selected) Icons.Filled.Tune else Icons.Outlined.Tune
 }
 
 @Composable
