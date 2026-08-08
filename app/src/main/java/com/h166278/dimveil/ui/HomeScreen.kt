@@ -54,7 +54,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -171,29 +170,15 @@ private fun BrandHeader() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // 能量核心徽标
-            Box(
-                Modifier
+            // 日全食徽标：白色月牙正被黑色天体遮住
+            EclipseMark(
+                modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(13.dp))
-                    .background(Brush.linearGradient(listOf(Color(0xFF1D3C35), Color(0xFF0E1717))))
-                    .border(1.dp, Color(0xFF2A4A40), RoundedCornerShape(13.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(Modifier.size(22.dp)) {
-                    val c = Offset(size.width / 2f, size.height / 2f)
-                    val r = size.minDimension * 0.40f
-                    val diamond = Path().apply {
-                        moveTo(c.x, c.y - r)
-                        lineTo(c.x + r, c.y)
-                        lineTo(c.x, c.y + r)
-                        lineTo(c.x - r, c.y)
-                        close()
-                    }
-                    drawPath(diamond, Mint.copy(alpha = 0.95f), style = Stroke(width = 2.5.dp.toPx()))
-                    drawCircle(Mint.copy(alpha = 0.9f), radius = r * 0.28f, center = c)
-                }
-            }
+                    .background(Color(0xFF080D0F))
+                    .border(1.dp, Color(0xFF2A4A40), RoundedCornerShape(13.dp))
+                    .padding(8.dp)
+            )
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("暗幕", color = MaterialTheme.colorScheme.onBackground, fontSize = 25.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
@@ -201,6 +186,25 @@ private fun BrandHeader() {
             }
         }
         Spacer(Modifier.width(42.dp))
+    }
+}
+
+@Composable
+private fun EclipseMark(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val center = Offset(size.width * 0.52f, size.height * 0.50f)
+        val radius = size.minDimension * 0.42f
+        // 日冕：只在黑色天体边缘露出一圈克制的冷青光
+        drawCircle(
+            color = Mint.copy(alpha = 0.72f),
+            radius = radius + 1.5.dp.toPx(),
+            center = center,
+            style = Stroke(width = 1.2.dp.toPx())
+        )
+        // 被遮住的白色月面，向左露出月牙
+        drawCircle(color = Color.White, radius = radius, center = center.copy(x = center.x - radius * 0.28f))
+        // 黑色天体向左压入，保留白色弯月与右侧日冕
+        drawCircle(color = Color(0xFF080D0F), radius = radius * 0.86f, center = center)
     }
 }
 
