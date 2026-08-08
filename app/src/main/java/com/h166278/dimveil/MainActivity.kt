@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                     onDepthPreview = viewModel::previewDepth,
                     onDepthCommit = viewModel::commitDepth,
                     onOpenAccessibility = {
+                        if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn()
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
                 )

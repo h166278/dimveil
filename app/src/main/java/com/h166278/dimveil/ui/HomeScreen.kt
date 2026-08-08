@@ -143,11 +143,11 @@ fun HomeScreen(
         AlertDialog(
             onDismissRequest = { showAccessibility = false },
             containerColor = Panel,
-            title = { Text("无障碍覆盖", color = MaterialTheme.colorScheme.onBackground) },
+            title = { Text("无障碍权限", color = MaterialTheme.colorScheme.onBackground) },
             text = {
                 Text(
-                    if (accessibilityEnabled) "无障碍全屏覆盖已开启\n\n仅用于在屏幕上显示护眼遮罩，不读取屏幕内容、不执行点击、不控制其他应用。"
-                    else "未开启无障碍覆盖，开启后可获得更完整的覆盖范围",
+                    if (accessibilityEnabled) "无障碍权限已开启\n\n用于在屏幕上显示护眼遮罩，以获得更完整的遮罩范围；不读取屏幕内容、不执行点击、不控制其他应用。"
+                    else "未开启无障碍权限。开启后可获得更完整的遮罩范围。\n\n此权限仅用于在屏幕上显示护眼遮罩，不读取屏幕内容、不执行点击、不控制其他应用。",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -420,9 +420,9 @@ private fun StatusCard(
 ) {
     val accessibilityMissing = !state.accessibilityEnabled
     val accent = if (accessibilityMissing) MutedTeal else Mint
-    val title = if (accessibilityMissing) "未开启无障碍覆盖" else "无障碍覆盖已开启"
+    val title = if (accessibilityMissing) "未开启无障碍权限" else "无障碍权限已开启"
     val detail = when {
-        accessibilityMissing -> "开启后可获得更完整的覆盖范围"
+        accessibilityMissing -> "开启后可获得更完整的遮罩范围"
         state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
         state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
         state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
