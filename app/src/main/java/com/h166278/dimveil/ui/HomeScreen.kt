@@ -74,18 +74,21 @@ import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.overlay.OverlayError
 import com.h166278.dimveil.overlay.OverlayHostKind
 
-// —— 暗幕色板 ——
-private val Ink = Color(0xFF070B0D)
-private val Panel = Color(0xFF101719)
-private val PillBg = Color(0xFF0C1214)
-private val PanelBorder = Color(0xFF24342F)
-private val Mint = Color(0xFF8BE8C1)
-private val MintBright = Color(0xFFB7FFE1)
-private val Amber = Color(0xFFE9BE6A)
-private val MutedTeal = Color(0xFF6C9285)
-private val TrackInactive = Color(0xFF30433F)
-private val ModeSelectedBg = Color(0xFF1D3C35)
-private val StatusWarnBg = Color(0xFF3A3220)
+// Reference-inspired energy palette. Labels and behavior remain product-owned.
+private val Ink = Color(0xFF090917)
+private val Panel = Color(0xFF111223)
+private val PillBg = Color(0xFF111323)
+private val PanelBorder = Color(0xFF292741)
+private val Violet = Color(0xFFC19AFF)
+private val VioletBright = Color(0xFFE1CFFF)
+private val Cyan = Color(0xFF68D4D5)
+private val Mint = Color(0xFF6CF0BD)
+private val MintBright = Color(0xFFB8FFE5)
+private val Amber = Color(0xFFFFC86B)
+private val MutedTeal = Color(0xFF7D75AE)
+private val TrackInactive = Color(0xFF303046)
+private val ModeSelectedBg = Color(0xFF33215D)
+private val StatusWarnBg = Color(0xFF3A3025)
 
 @Composable
 fun HomeScreen(
@@ -103,51 +106,63 @@ fun HomeScreen(
     val accessibilityEnabled = state.accessibilityEnabled
 
     Box(Modifier.fillMaxSize().background(Ink)) {
-        // 顶部能量核心氛围光晕
         Box(
             Modifier
                 .align(Alignment.TopCenter)
-                .size(480.dp)
-                .offset(y = (-210).dp)
-                .background(Brush.radialGradient(listOf(Color(0xFF1B4B3B).copy(alpha = 0.5f), Color.Transparent)), CircleShape)
+                .size(520.dp)
+                .offset(y = (-240).dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(Color(0xFF2B1A55).copy(alpha = 0.72f), Color.Transparent)
+                    ),
+                    CircleShape
+                )
+        )
+        Box(
+            Modifier
+                .align(Alignment.CenterEnd)
+                .size(260.dp)
+                .offset(x = 100.dp, y = 180.dp)
+                .background(
+                    Brush.radialGradient(
+                        listOf(Color(0xFF0D4C4A).copy(alpha = 0.28f), Color.Transparent)
+                    ),
+                    CircleShape
+                )
         )
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .systemBarsPadding()
-                .padding(horizontal = 22.dp, vertical = 16.dp),
+                .padding(horizontal = 22.dp, vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BrandHeader(accessibilityEnabled = accessibilityEnabled, onClick = { showAccessibility = true })
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(46.dp))
             GuardTitle(active = active)
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(16.dp))
             CoreSwitch(active = active, onClick = onToggle)
             Spacer(Modifier.height(16.dp))
             Crossfade(targetState = active, label = "overlayState") { on ->
                 Text(
                     if (on) "覆盖已开启" else "覆盖已关闭",
                     color = if (on) Mint else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.sp
                 )
             }
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(24.dp))
             ModeRow(mode = mode, onMode = onMode)
-            Spacer(Modifier.height(14.dp))
-            DepthCard(
-                depth = depth,
-                onDepthPreview = onDepthPreview,
-                onDepthCommit = onDepthCommit
-            )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(16.dp))
+            DepthCard(depth = depth, onDepthPreview = onDepthPreview, onDepthCommit = onDepthCommit)
+            Spacer(Modifier.height(16.dp))
             StatusCard(state = state)
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(22.dp))
             Text(
                 "暗幕 v${BuildConfig.VERSION_NAME} · 离线无追踪",
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.48f),
                 fontSize = 11.sp,
                 letterSpacing = 1.sp
             )
@@ -248,17 +263,15 @@ private fun GuardTitle(active: Boolean) {
 
 @Composable
 private fun CoreSwitch(active: Boolean, onClick: () -> Unit) {
-    val ringColor by animateColorAsState(if (active) Mint else MutedTeal, label = "ring")
-    val coreColor by animateColorAsState(if (active) MintBright else Color(0xFFB5D6CA), label = "core")
-    val fillTop by animateColorAsState(if (active) Color(0xFF1B4B3B) else Color(0xFF263D39), label = "fillTop")
-    val glowAlpha by animateFloatAsState(if (active) 1f else 0.25f, label = "glow")
+    val coreColor by animateColorAsState(if (active) VioletBright else Color(0xFFC5B8D9), label = "core")
+    val glowAlpha by animateFloatAsState(if (active) 1f else 0.34f, label = "glow")
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.94f else 1f, label = "scale")
+    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, label = "scale")
 
     Box(
         Modifier
-            .size(188.dp)
+            .size(292.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .semantics {
@@ -268,28 +281,38 @@ private fun CoreSwitch(active: Boolean, onClick: () -> Unit) {
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        // 外层辉光
         Box(
-            Modifier.size(172.dp).background(
-                Brush.radialGradient(listOf(ringColor.copy(alpha = 0.30f * glowAlpha), Color.Transparent)),
+            Modifier.size(288.dp).background(
+                Brush.radialGradient(
+                    listOf(Violet.copy(alpha = 0.20f * glowAlpha), Cyan.copy(alpha = 0.08f * glowAlpha), Color.Transparent)
+                ),
                 CircleShape
             )
         )
-        Canvas(Modifier.size(150.dp)) {
+        Canvas(Modifier.size(274.dp)) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val radius = size.minDimension * 0.44f
-            // 盘面渐变
-            drawCircle(Brush.radialGradient(listOf(fillTop, Color(0xFF0E1717))), radius = radius, center = center)
-            // 主环
-            drawCircle(ringColor, radius = radius, center = center, style = Stroke(width = 5.dp.toPx()))
-            // 外圈淡环
-            drawCircle(ringColor.copy(alpha = 0.35f), radius = radius + 10.dp.toPx(), center = center, style = Stroke(width = 2.dp.toPx()))
-            // 核心亮点
-            drawCircle(coreColor, radius = radius * 0.22f, center = center)
-            // 顶部指示灯
-            drawLine(ringColor, Offset(center.x, center.y - radius * 0.78f), Offset(center.x, center.y - radius * 0.42f), strokeWidth = 7.dp.toPx(), cap = StrokeCap.Round)
+            val outerRadius = size.minDimension * 0.47f
+            val innerRadius = size.minDimension * 0.34f
+            drawCircle(Color(0xFF111125), radius = outerRadius, center = center)
+            drawCircle(
+                Brush.sweepGradient(listOf(Cyan, Violet, Color(0xFF8A6CFF), Mint, Cyan)),
+                radius = outerRadius,
+                center = center,
+                style = Stroke(width = 5.dp.toPx())
+            )
+            drawCircle(Violet.copy(alpha = 0.18f), radius = outerRadius - 9.dp.toPx(), center = center)
+            drawCircle(
+                Brush.radialGradient(listOf(Color(0xFF302258), Color(0xFF1A1933))),
+                radius = innerRadius,
+                center = center
+            )
+            drawCircle(Violet.copy(alpha = 0.45f), radius = innerRadius, center = center, style = Stroke(width = 1.dp.toPx()))
         }
-        Icon(Icons.Filled.BrightnessLow, contentDescription = "开启或关闭遮罩", tint = coreColor, modifier = Modifier.size(32.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Filled.BrightnessLow, contentDescription = "开启或关闭遮罩", tint = coreColor, modifier = Modifier.size(48.dp))
+            Spacer(Modifier.height(14.dp))
+            Text(if (active) "覆盖已开启" else "覆盖已关闭", color = MaterialTheme.colorScheme.onBackground, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
@@ -373,7 +396,11 @@ private fun DepthCard(
             onValueChange = { onDepthPreview(it.toInt()) },
             onValueChangeFinished = onDepthCommit,
             valueRange = 0f..90f,
-            colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint, inactiveTrackColor = TrackInactive)
+            colors = SliderDefaults.colors(
+                thumbColor = Violet,
+                activeTrackColor = Violet,
+                inactiveTrackColor = TrackInactive
+            )
         )
         if (depth >= 80) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -408,8 +435,8 @@ private fun StatusCard(state: MainUiState) {
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Panel)
-            .border(1.dp, PanelBorder, RoundedCornerShape(16.dp))
+            .background(if (healthy) Color(0xFF102B2A) else Panel)
+            .border(1.dp, if (healthy) Mint.copy(alpha = 0.35f) else PanelBorder, RoundedCornerShape(16.dp))
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -417,7 +444,7 @@ private fun StatusCard(state: MainUiState) {
             Modifier
                 .size(38.dp)
                 .clip(CircleShape)
-                .background(if (healthy) Color(0xFF1D3C35) else StatusWarnBg),
+                .background(if (healthy) Color(0xFF195445) else StatusWarnBg),
             contentAlignment = Alignment.Center
         ) {
             Icon(
