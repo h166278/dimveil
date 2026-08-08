@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.MenuBook
@@ -38,9 +37,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -87,7 +84,6 @@ private val Amber = Color(0xFFE9BE6A)
 private val MutedTeal = Color(0xFF6C9285)
 private val TrackInactive = Color(0xFF30433F)
 private val ModeSelectedBg = Color(0xFF1D3C35)
-private val StatusWarnBg = Color(0xFF3A3220)
 
 @Composable
 fun HomeScreen(
@@ -96,8 +92,7 @@ fun HomeScreen(
     onMode: (DimMode) -> Unit,
     onDepthPreview: (Int) -> Unit,
     onDepthCommit: () -> Unit,
-    onOpenAccessibility: () -> Unit,
-    onOpenOverlayPermission: () -> Unit
+    onOpenAccessibility: () -> Unit
 ) {
     var showAccessibility by remember { mutableStateOf(false) }
     val active = state.active
@@ -114,13 +109,13 @@ fun HomeScreen(
                 .padding(horizontal = 22.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BrandHeader(accessibilityEnabled = accessibilityEnabled, onClick = { showAccessibility = true })
+            BrandHeader()
             Spacer(Modifier.height(32.dp))
             GuardTitle(active = active, blocked = !state.canStart)
             Spacer(Modifier.height(20.dp))
             CoreSwitch(active = active, enabled = state.canStart || active, onClick = onToggle)
             Spacer(Modifier.height(14.dp))
-            OverlayStateLabel(active = active, blocked = !state.canStart)
+            OverlayStateLabel(state = state)
             Spacer(Modifier.height(26.dp))
             ModeRow(mode = mode, onMode = onMode)
             Spacer(Modifier.height(14.dp))
@@ -132,8 +127,7 @@ fun HomeScreen(
             Spacer(Modifier.height(14.dp))
             StatusCard(
                 state = state,
-                onOpenAccessibility = { showAccessibility = true },
-                onOpenOverlayPermission = onOpenOverlayPermission
+                onOpenAccessibility = { showAccessibility = true }
             )
             Spacer(Modifier.height(20.dp))
             Text(
@@ -153,7 +147,7 @@ fun HomeScreen(
             text = {
                 Text(
                     if (accessibilityEnabled) "无障碍全屏覆盖已开启\n\n仅用于在屏幕上显示护眼遮罩，不读取屏幕内容、不执行点击、不控制其他应用。"
-                    else "未开启无障碍覆盖。普通悬浮窗仍可使用；开启后可获得更完整的覆盖范围。",
+                    else "未开启无障碍覆盖，开启后可获得更完整的覆盖范围",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -170,7 +164,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun BrandHeader(accessibilityEnabled: Boolean, onClick: () -> Unit) {
+private fun BrandHeader() {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -206,13 +200,7 @@ private fun BrandHeader(accessibilityEnabled: Boolean, onClick: () -> Unit) {
                 Text("DIM VEIL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 3.sp)
             }
         }
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector = if (accessibilityEnabled) Icons.Filled.AccessibilityNew else Icons.Filled.WarningAmber,
-                contentDescription = "无障碍覆盖状态",
-                tint = if (accessibilityEnabled) Mint else Amber
-            )
-        }
+        Spacer(Modifier.width(42.dp))
     }
 }
 
@@ -248,16 +236,19 @@ private fun GuardTitle(active: Boolean, blocked: Boolean) {
 }
 
 @Composable
-private fun OverlayStateLabel(active: Boolean, blocked: Boolean) {
+private fun OverlayStateLabel(state: MainUiState) {
+    val active = state.active && state.host != null
     val color = when {
-        blocked -> Amber
         active -> Mint
-        else -> MutedTeal
+        state.canStart -> MutedTeal
+        else -> Amber
     }
     val label = when {
-        blocked -> "需要悬浮窗或无障碍权限"
-        active -> "正在运行"
-        else -> "未开启"
+        state.host == OverlayHostKind.ACCESSIBILITY && active -> "当前遮罩：无障碍遮罩"
+        state.host == OverlayHostKind.NORMAL && active -> "当前遮罩：悬浮窗遮罩"
+        state.accessibilityEnabled -> "无障碍遮罩（待开启）"
+        state.canDraw -> "悬浮窗遮罩（待开启）"
+        else -> "需要悬浮窗或无障碍权限"
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(color))
@@ -425,36 +416,27 @@ private fun DepthCard(
 @Composable
 private fun StatusCard(
     state: MainUiState,
-    onOpenAccessibility: () -> Unit,
-    onOpenOverlayPermission: () -> Unit
+    onOpenAccessibility: () -> Unit
 ) {
-    val blocked = state.error == OverlayError.NO_AVAILABLE_HOST ||
-        state.error == OverlayError.WINDOW_REJECTED || !state.canStart
-    val title = when {
-        blocked -> "需要覆盖权限"
-        state.host == OverlayHostKind.ACCESSIBILITY -> "无障碍全屏覆盖运行中"
-        state.host == OverlayHostKind.NORMAL -> "普通悬浮窗覆盖运行中"
-        state.accessibilityReady -> "无障碍覆盖已准备"
-        else -> "覆盖权限已准备"
-    }
+    val accessibilityMissing = !state.accessibilityEnabled
+    val accent = if (accessibilityMissing) MutedTeal else Mint
+    val title = if (accessibilityMissing) "未开启无障碍覆盖" else "无障碍覆盖已开启"
     val detail = when {
+        accessibilityMissing -> "开启后可获得更完整的覆盖范围"
         state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
         state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
-        blocked -> "去系统设置开启悬浮窗权限后即可使用"
         state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
         !state.notificationsAllowed -> "通知权限未开启，请从应用内关闭遮罩"
-        state.accessibilityEnabled && !state.accessibilityReady -> "无障碍服务正在连接"
-        else -> "可随时开启遮罩"
+        else -> "可获得更完整的覆盖范围"
     }
-    val icon = if (blocked) Icons.Filled.WarningAmber else Icons.Filled.Verified
-    val accent = if (blocked) Amber else Mint
 
     Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(Panel)
-            .border(1.dp, if (blocked) Amber.copy(alpha = 0.34f) else PanelBorder, RoundedCornerShape(16.dp))
+            .border(1.dp, PanelBorder, RoundedCornerShape(16.dp))
+            .clickable(onClick = onOpenAccessibility)
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -462,10 +444,10 @@ private fun StatusCard(
                 Modifier
                     .size(38.dp)
                     .clip(CircleShape)
-                    .background(if (blocked) StatusWarnBg else ModeSelectedBg),
+                    .background(ModeSelectedBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                Icon(Icons.Filled.Verified, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -473,15 +455,6 @@ private fun StatusCard(
                 Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
             Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-        }
-        if (blocked) {
-            Spacer(Modifier.height(12.dp))
-            Button(
-                onClick = if (state.accessibilityEnabled) onOpenAccessibility else onOpenOverlayPermission,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (state.accessibilityEnabled) "打开无障碍设置" else "去设置")
-            }
         }
     }
 }
