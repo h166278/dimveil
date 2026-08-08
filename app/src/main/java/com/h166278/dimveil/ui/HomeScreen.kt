@@ -1,7 +1,10 @@
 package com.h166278.dimveil.ui
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,27 +18,30 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
-import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -48,7 +54,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -56,6 +67,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,18 +76,18 @@ import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.overlay.OverlayError
 import com.h166278.dimveil.overlay.OverlayHostKind
 
-private val Canvas = Color(0xFF202124)
-private val Panel = Color(0xFF2C2D31)
-private val PanelRaised = Color(0xFF37383D)
-private val Stroke = Color(0xFF4A4B51)
-private val Ink = Color(0xFFF5F5F6)
-private val Muted = Color(0xFFB7B9C2)
-private val Blue = Color(0xFF18A0FB)
-private val BlueContainer = Color(0xFF163A55)
-private val Green = Color(0xFF55C2A5)
-private val Amber = Color(0xFFFFC76A)
-private val Coral = Color(0xFFFF8A80)
-private val Corner = RoundedCornerShape(6.dp)
+// —— 暗幕色板 ——
+private val Ink = Color(0xFF070B0D)
+private val Panel = Color(0xFF101719)
+private val PillBg = Color(0xFF0C1214)
+private val PanelBorder = Color(0xFF24342F)
+private val Mint = Color(0xFF8BE8C1)
+private val MintBright = Color(0xFFB7FFE1)
+private val Amber = Color(0xFFE9BE6A)
+private val MutedTeal = Color(0xFF6C9285)
+private val TrackInactive = Color(0xFF30433F)
+private val ModeSelectedBg = Color(0xFF1D3C35)
+private val StatusWarnBg = Color(0xFF3A3220)
 
 @Composable
 fun HomeScreen(
@@ -84,190 +96,269 @@ fun HomeScreen(
     onMode: (DimMode) -> Unit,
     onDepthPreview: (Int) -> Unit,
     onDepthCommit: () -> Unit,
-    onOpenAccessibility: () -> Unit
+    onOpenAccessibility: () -> Unit,
+    onOpenOverlayPermission: () -> Unit
 ) {
     var showAccessibility by remember { mutableStateOf(false) }
-    Box(Modifier.fillMaxSize().background(Canvas)) {
-        Column(Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState())) {
-            AppHeader(state.accessibilityEnabled) { showAccessibility = true }
-            Workspace(state, onToggle, onMode, onDepthPreview, onDepthCommit)
-            Footer()
+    val active = state.active
+    val mode = state.mode
+    val depth = state.depth
+    val accessibilityEnabled = state.accessibilityEnabled
+
+    Box(Modifier.fillMaxSize().background(Ink)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .systemBarsPadding()
+                .padding(horizontal = 22.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            BrandHeader(accessibilityEnabled = accessibilityEnabled, onClick = { showAccessibility = true })
+            Spacer(Modifier.height(32.dp))
+            GuardTitle(active = active, blocked = !state.canStart)
+            Spacer(Modifier.height(20.dp))
+            CoreSwitch(active = active, enabled = state.canStart || active, onClick = onToggle)
+            Spacer(Modifier.height(14.dp))
+            OverlayStateLabel(active = active, blocked = !state.canStart)
+            Spacer(Modifier.height(26.dp))
+            ModeRow(mode = mode, onMode = onMode)
+            Spacer(Modifier.height(14.dp))
+            DepthCard(
+                depth = depth,
+                onDepthPreview = onDepthPreview,
+                onDepthCommit = onDepthCommit
+            )
+            Spacer(Modifier.height(14.dp))
+            StatusCard(
+                state = state,
+                onOpenAccessibility = { showAccessibility = true },
+                onOpenOverlayPermission = onOpenOverlayPermission
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "暗幕 v${BuildConfig.VERSION_NAME} · 离线无追踪",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                fontSize = 11.sp,
+                letterSpacing = 1.sp
+            )
         }
     }
-    if (showAccessibility) AccessibilityDialog(state.accessibilityEnabled, onOpenAccessibility) { showAccessibility = false }
+
+    if (showAccessibility) {
+        AlertDialog(
+            onDismissRequest = { showAccessibility = false },
+            containerColor = Panel,
+            title = { Text("无障碍覆盖", color = MaterialTheme.colorScheme.onBackground) },
+            text = {
+                Text(
+                    if (accessibilityEnabled) "无障碍全屏覆盖已开启\n\n仅用于在屏幕上显示护眼遮罩，不读取屏幕内容、不执行点击、不控制其他应用。"
+                    else "未开启无障碍覆盖。普通悬浮窗仍可使用；开启后可获得更完整的覆盖范围。",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onOpenAccessibility(); showAccessibility = false }) {
+                    Text(if (accessibilityEnabled) "系统设置" else "去开启")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAccessibility = false }) { Text("关闭") }
+            }
+        )
+    }
 }
 
 @Composable
-private fun AppHeader(accessibilityEnabled: Boolean, onAccessibility: () -> Unit) {
+private fun BrandHeader(accessibilityEnabled: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(62.dp).background(Color(0xFF292A2E))
-            .border(1.dp, Stroke).padding(horizontal = 18.dp),
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(Modifier.size(28.dp).clip(Corner).background(Blue), contentAlignment = Alignment.Center) {
-            Icon(Icons.Filled.DarkMode, null, tint = Color.White, modifier = Modifier.size(18.dp))
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text("暗幕", color = Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text("DIM VEIL / SCREEN OVERLAY", color = Muted, fontSize = 9.sp, letterSpacing = 1.sp)
-        }
-        StatusChip(accessibilityEnabled)
-        Spacer(Modifier.width(6.dp))
-        IconButton(onClick = onAccessibility) {
-            Icon(Icons.Filled.AccessibilityNew, "无障碍覆盖设置", tint = if (accessibilityEnabled) Green else Amber)
-        }
-    }
-}
-
-@Composable
-private fun StatusChip(ready: Boolean) {
-    Row(
-        Modifier.clip(Corner).background(if (ready) Color(0xFF203C37) else Color(0xFF493C22))
-            .padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(Modifier.size(6.dp).clip(CircleShape).background(if (ready) Green else Amber))
-        Spacer(Modifier.width(6.dp))
-        Text(if (ready) "覆盖已就绪" else "等待授权", color = if (ready) Green else Amber, fontSize = 11.sp)
-    }
-}
-
-@Composable
-private fun Workspace(
-    state: MainUiState,
-    onToggle: () -> Unit,
-    onMode: (DimMode) -> Unit,
-    onDepthPreview: (Int) -> Unit,
-    onDepthCommit: () -> Unit
-) {
-    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        PreviewCanvas(state.active, state.depth, onToggle)
-        InspectorHeader("效果属性", "PROPERTIES")
-        ModeInspector(state.mode, onMode)
-        DepthInspector(state.depth, onDepthPreview, onDepthCommit)
-        RuntimeInspector(state)
-    }
-}
-
-@Composable
-private fun PreviewCanvas(active: Boolean, depth: Int, onToggle: () -> Unit) {
-    val surface by animateColorAsState(if (active) Color(0xFF101114) else Color(0xFF25262A), label = "previewSurface")
-    Column(
-        Modifier.fillMaxWidth().clip(Corner).background(surface).border(1.dp, Stroke, Corner)
-            .padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("PREVIEW", color = Muted, fontSize = 10.sp, letterSpacing = 1.2.sp)
-            Text(if (active) "ACTIVE" else "IDLE", color = if (active) Green else Muted, fontSize = 10.sp, letterSpacing = 1.2.sp)
-        }
-        Spacer(Modifier.height(24.dp))
-        ToggleControl(active, onToggle)
-        Spacer(Modifier.height(18.dp))
-        Text(if (active) "暗幕正在保护你的屏幕" else "准备好降低屏幕亮度", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(6.dp))
-        Text(if (active) "当前遮罩深度 $depth%" else "点击中央开关，即刻启用暗幕覆盖", color = Muted, fontSize = 13.sp)
-        Spacer(Modifier.height(20.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("画布遮罩", color = Muted, fontSize = 11.sp)
-            Text("${if (active) depth else 0}%", color = Blue, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
-@Composable
-private fun ToggleControl(active: Boolean, onToggle: () -> Unit) {
-    val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) .94f else 1f, label = "toggleScale")
-    val color by animateColorAsState(if (active) Blue else PanelRaised, label = "toggleColor")
-    Box(
-        Modifier.size(104.dp).graphicsLayer { scaleX = scale; scaleY = scale }.clip(CircleShape)
-            .background(color).border(1.dp, if (active) Color(0xFF87D4FF) else Stroke, CircleShape)
-            .semantics { role = Role.Switch; stateDescription = if (active) "遮罩已开启" else "遮罩已关闭" }
-            .clickable(source, null, onClick = onToggle), contentAlignment = Alignment.Center
-    ) { Icon(Icons.Filled.Bolt, "切换暗幕", tint = if (active) Color.White else Muted, modifier = Modifier.size(40.dp)) }
-}
-
-@Composable
-private fun InspectorHeader(title: String, meta: String) {
-    Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(title, color = Ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-        Text(meta, color = Muted, fontSize = 10.sp, letterSpacing = 1.sp)
-    }
-}
-
-@Composable
-private fun ModeInspector(mode: DimMode, onMode: (DimMode) -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(Corner).background(Panel).border(1.dp, Stroke, Corner).padding(12.dp)) {
-        Label("预设", "选择遮罩模式")
-        Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            DimMode.entries.forEach { item ->
-                val chosen = item == mode
-                Column(
-                    Modifier.weight(1f).clip(Corner).background(if (chosen) BlueContainer else PanelRaised)
-                        .border(1.dp, if (chosen) Blue else Color.Transparent, Corner).padding(vertical = 9.dp)
-                        .semantics { selected = chosen; role = Role.RadioButton }.clickable { onMode(item) },
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(modeIcon(item), null, tint = if (chosen) Blue else Muted, modifier = Modifier.size(17.dp))
-                    Spacer(Modifier.height(5.dp))
-                    Text(item.label, color = if (chosen) Ink else Muted, fontSize = 10.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // 能量核心徽标
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(Brush.linearGradient(listOf(Color(0xFF1D3C35), Color(0xFF0E1717))))
+                    .border(1.dp, Color(0xFF2A4A40), RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(Modifier.size(22.dp)) {
+                    val c = Offset(size.width / 2f, size.height / 2f)
+                    val r = size.minDimension * 0.40f
+                    val diamond = Path().apply {
+                        moveTo(c.x, c.y - r)
+                        lineTo(c.x + r, c.y)
+                        lineTo(c.x, c.y + r)
+                        lineTo(c.x - r, c.y)
+                        close()
+                    }
+                    drawPath(diamond, Mint.copy(alpha = 0.95f), style = Stroke(width = 2.5.dp.toPx()))
+                    drawCircle(Mint.copy(alpha = 0.9f), radius = r * 0.28f, center = c)
                 }
             }
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("暗幕", color = MaterialTheme.colorScheme.onBackground, fontSize = 25.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
+                Text("DIM VEIL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 3.sp)
+            }
+        }
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = if (accessibilityEnabled) Icons.Filled.AccessibilityNew else Icons.Filled.WarningAmber,
+                contentDescription = "无障碍覆盖状态",
+                tint = if (accessibilityEnabled) Mint else Amber
+            )
         }
     }
 }
 
 @Composable
-private fun DepthInspector(depth: Int, onDepthPreview: (Int) -> Unit, onDepthCommit: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(Corner).background(Panel).border(1.dp, Stroke, Corner).padding(12.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Label("遮罩深度", "0% - 90%")
-            Text("$depth%", color = Blue, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+private fun GuardTitle(active: Boolean, blocked: Boolean) {
+    val title = when {
+        blocked -> "需要授权"
+        active -> "遮罩正在运行"
+        else -> "降低屏幕亮度"
+    }
+    val detail = when {
+        blocked -> "授予覆盖权限后即可开启"
+        active -> "轻触核心即可关闭"
+        else -> "开启后可低于系统最低亮度"
+    }
+    Crossfade(targetState = title to detail, label = "guardTitle") { (headline, supporting) ->
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                headline,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                supporting,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 13.sp
+            )
         }
-        Slider(value = depth.toFloat(), onValueChange = { onDepthPreview(it.toInt()) }, onValueChangeFinished = onDepthCommit,
-            valueRange = 0f..90f, colors = SliderDefaults.colors(thumbColor = Ink, activeTrackColor = Blue, inactiveTrackColor = Stroke))
-        if (depth >= 80) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.WarningAmber, null, tint = Amber, modifier = Modifier.size(15.dp))
-                Spacer(Modifier.width(6.dp)); Text("高强度遮罩，请保留必要可见度", color = Amber, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun OverlayStateLabel(active: Boolean, blocked: Boolean) {
+    val color = when {
+        blocked -> Amber
+        active -> Mint
+        else -> MutedTeal
+    }
+    val label = when {
+        blocked -> "需要悬浮窗或无障碍权限"
+        active -> "正在运行"
+        else -> "未开启"
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(color))
+        Spacer(Modifier.width(8.dp))
+        Text(label, color = color, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val ringColor by animateColorAsState(
+        when {
+            active -> Mint
+            enabled -> MutedTeal
+            else -> Amber.copy(alpha = 0.72f)
+        },
+        label = "ring"
+    )
+    val coreColor by animateColorAsState(
+        if (active) MintBright else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "core"
+    )
+    val fillTop by animateColorAsState(
+        if (active) Color(0xFF17372E) else Color(0xFF131D1E),
+        label = "fillTop"
+    )
+    val glowAlpha by animateFloatAsState(if (active) 0.72f else 0f, label = "glow")
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.94f else 1f, label = "scale")
+
+    Box(
+        Modifier
+            .size(188.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .clip(CircleShape)
+            .semantics {
+                role = Role.Switch
+                stateDescription = when {
+                    active -> "遮罩已开启"
+                    enabled -> "遮罩已关闭"
+                    else -> "需要权限才能开启"
+                }
+            }
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        // 外层辉光
+        Box(
+            Modifier.size(172.dp).background(
+                Brush.radialGradient(listOf(ringColor.copy(alpha = 0.30f * glowAlpha), Color.Transparent)),
+                CircleShape
+            )
+        )
+        Canvas(Modifier.size(150.dp)) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val radius = size.minDimension * 0.44f
+            // 盘面渐变
+            drawCircle(Brush.radialGradient(listOf(fillTop, Color(0xFF0E1717))), radius = radius, center = center)
+            // 主环
+            drawCircle(ringColor, radius = radius, center = center, style = Stroke(width = 5.dp.toPx()))
+            // 外圈淡环
+            drawCircle(ringColor.copy(alpha = 0.35f), radius = radius + 10.dp.toPx(), center = center, style = Stroke(width = 2.dp.toPx()))
+            // 核心亮点
+            drawCircle(coreColor, radius = radius * 0.22f, center = center)
+            // 顶部指示灯
+            drawLine(ringColor, Offset(center.x, center.y - radius * 0.78f), Offset(center.x, center.y - radius * 0.42f), strokeWidth = 7.dp.toPx(), cap = StrokeCap.Round)
+        }
+        Icon(Icons.Filled.BrightnessLow, contentDescription = "开启或关闭遮罩", tint = coreColor, modifier = Modifier.size(32.dp))
+    }
+}
+
+@Composable
+private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        DimMode.entries.forEach { item ->
+            val selected = item == mode
+            val bg by animateColorAsState(if (selected) ModeSelectedBg else PillBg, label = "modeBg")
+            val borderColor by animateColorAsState(if (selected) Mint.copy(alpha = 0.7f) else PanelBorder, label = "modeBorder")
+            val fg by animateColorAsState(if (selected) Mint else MaterialTheme.colorScheme.onSurfaceVariant, label = "modeFg")
+            Column(
+                Modifier
+                    .weight(1f)
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(bg)
+                    .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+                    .semantics {
+                        this.selected = selected
+                        role = Role.RadioButton
+                    }
+                    .clickable { onMode(item) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(modeIcon(item), contentDescription = null, tint = fg, modifier = Modifier.size(19.dp))
+                Spacer(Modifier.height(4.dp))
+                Text(item.label, color = fg, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
             }
         }
     }
-}
-
-@Composable
-private fun RuntimeInspector(state: MainUiState) {
-    val healthy = state.error == null && (state.active || state.canStart)
-    val title = when (state.host) {
-        OverlayHostKind.ACCESSIBILITY -> "无障碍全屏覆盖"
-        OverlayHostKind.NORMAL -> "普通悬浮窗覆盖"
-        null -> "覆盖运行状态"
-    }
-    val detail = when {
-        state.error == OverlayError.NO_AVAILABLE_HOST -> "没有可用的覆盖权限"
-        state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
-        state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
-        state.depthLimited -> "普通覆盖已限制为 ${state.appliedDepth}%"
-        state.active -> "遮罩已应用，点击预览区中央开关可关闭"
-        state.canDraw || state.accessibilityReady -> "权限已准备，随时可以启用"
-        else -> "启用时将请求覆盖权限"
-    }
-    Row(Modifier.fillMaxWidth().clip(Corner).background(Panel).border(1.dp, Stroke, Corner).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(30.dp).clip(Corner).background(if (healthy) Color(0xFF203C37) else Color(0xFF493C22)), contentAlignment = Alignment.Center) {
-            Icon(Icons.Filled.Shield, null, tint = if (healthy) Green else Amber, modifier = Modifier.size(17.dp))
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) { Label(title, detail) }
-        Box(Modifier.size(7.dp).clip(CircleShape).background(if (healthy) Green else Coral))
-    }
-}
-
-@Composable
-private fun Label(title: String, detail: String) {
-    Text(title, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-    Spacer(Modifier.height(2.dp)); Text(detail, color = Muted, fontSize = 11.sp)
 }
 
 private fun modeIcon(mode: DimMode): ImageVector = when (mode) {
@@ -278,18 +369,119 @@ private fun modeIcon(mode: DimMode): ImageVector = when (mode) {
 }
 
 @Composable
-private fun Footer() {
-    Text("暗幕 v${BuildConfig.VERSION_NAME}  |  本地运行，无追踪", color = Muted, fontSize = 10.sp,
-        modifier = Modifier.fillMaxWidth().padding(20.dp), fontWeight = FontWeight.Medium)
+private fun DepthCard(
+    depth: Int,
+    onDepthPreview: (Int) -> Unit,
+    onDepthCommit: () -> Unit
+) {
+    val animatedDepth by animateIntAsState(depth, label = "depth")
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Panel)
+            .border(1.dp, PanelBorder, RoundedCornerShape(18.dp))
+            .padding(horizontal = 18.dp, vertical = 16.dp)
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Column {
+                Text("遮罩深度", color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(2.dp))
+                Text("调节暗幕浓度 0–90%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+            }
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("$animatedDepth", color = Mint, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "%",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(start = 2.dp, bottom = 5.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Slider(
+            value = depth.toFloat(),
+            onValueChange = { onDepthPreview(it.toInt()) },
+            onValueChangeFinished = onDepthCommit,
+            valueRange = 0f..90f,
+            colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint, inactiveTrackColor = TrackInactive)
+        )
+        if (depth >= 80) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = Amber, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("深度较高，请确认仍能看清屏幕", color = Amber, fontSize = 12.sp)
+            }
+        }
+    }
 }
 
 @Composable
-private fun AccessibilityDialog(enabled: Boolean, onOpen: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss, shape = Corner, containerColor = Panel, titleContentColor = Ink, textContentColor = Muted,
-        title = { Text("无障碍覆盖", fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
-        text = { Text(if (enabled) "无障碍全屏覆盖已开启，仅用于显示护眼遮罩。" else "普通悬浮窗仍可使用。开启无障碍覆盖可获得更完整的覆盖范围。", fontSize = 13.sp) },
-        confirmButton = { TextButton(onClick = { onOpen(); onDismiss() }) { Text(if (enabled) "系统设置" else "去开启", color = Blue) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("关闭", color = Muted) } }
-    )
+private fun StatusCard(
+    state: MainUiState,
+    onOpenAccessibility: () -> Unit,
+    onOpenOverlayPermission: () -> Unit
+) {
+    val blocked = state.error == OverlayError.NO_AVAILABLE_HOST ||
+        state.error == OverlayError.WINDOW_REJECTED || !state.canStart
+    val title = when {
+        blocked -> "需要覆盖权限"
+        state.host == OverlayHostKind.ACCESSIBILITY -> "无障碍全屏覆盖运行中"
+        state.host == OverlayHostKind.NORMAL -> "普通悬浮窗覆盖运行中"
+        state.accessibilityReady -> "无障碍覆盖已准备"
+        else -> "覆盖权限已准备"
+    }
+    val detail = when {
+        state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
+        state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
+        blocked -> "去系统设置开启悬浮窗权限后即可使用"
+        state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
+        !state.notificationsAllowed -> "通知权限未开启，请从应用内关闭遮罩"
+        state.accessibilityEnabled && !state.accessibilityReady -> "无障碍服务正在连接"
+        else -> "可随时开启遮罩"
+    }
+    val icon = if (blocked) Icons.Filled.WarningAmber else Icons.Filled.Verified
+    val accent = if (blocked) Amber else Mint
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Panel)
+            .border(1.dp, if (blocked) Amber.copy(alpha = 0.34f) else PanelBorder, RoundedCornerShape(16.dp))
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(if (blocked) StatusWarnBg else ModeSelectedBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            }
+            Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
+        }
+        if (blocked) {
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = if (state.accessibilityEnabled) onOpenAccessibility else onOpenOverlayPermission,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (state.accessibilityEnabled) "打开无障碍设置" else "去设置")
+            }
+        }
+    }
 }

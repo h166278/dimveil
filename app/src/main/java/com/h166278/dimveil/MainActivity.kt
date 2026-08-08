@@ -47,7 +47,8 @@ class MainActivity : ComponentActivity() {
                     onDepthCommit = viewModel::commitDepth,
                     onOpenAccessibility = {
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    }
+                    },
+                    onOpenOverlayPermission = ::openOverlayPermission
                 )
             }
         }

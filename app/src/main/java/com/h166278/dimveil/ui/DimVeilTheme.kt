@@ -8,50 +8,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-// Figma-inspired editor palette: neutral canvas, blue selection and compact corners.
-private val Canvas = Color(0xFF202124)
-private val Panel = Color(0xFF2C2D31)
-private val PanelRaised = Color(0xFF37383D)
-private val Stroke = Color(0xFF4A4B51)
-private val Ink = Color(0xFFF5F5F6)
-private val Muted = Color(0xFFB7B9C2)
-private val Blue = Color(0xFF18A0FB)
-private val Green = Color(0xFF55C2A5)
-private val Red = Color(0xFFFF8A80)
-
 private val DimVeilColors = darkColorScheme(
-    primary = Blue,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFF163A55),
-    onPrimaryContainer = Color(0xFFD9F0FF),
-    secondary = Green,
-    onSecondary = Color(0xFF082A24),
-    secondaryContainer = Color(0xFF203C37),
-    onSecondaryContainer = Color(0xFFC5F5E8),
-    background = Canvas,
-    onBackground = Ink,
-    surface = Panel,
-    onSurface = Ink,
-    surfaceVariant = PanelRaised,
-    onSurfaceVariant = Muted,
-    surfaceContainerLowest = Canvas,
-    surfaceContainerLow = Color(0xFF25262A),
-    surfaceContainer = Panel,
-    surfaceContainerHigh = PanelRaised,
-    surfaceContainerHighest = PanelRaised,
-    outline = Stroke,
-    outlineVariant = Color(0xFF3A3B40),
-    error = Red,
-    onError = Color.White,
-    inverseSurface = Ink,
-    inverseOnSurface = Canvas,
-    scrim = Canvas
+    primary = Color(0xFF8BE8C1),
+    onPrimary = Color(0xFF082018),
+    primaryContainer = Color(0xFF1D3C35),
+    onPrimaryContainer = Color(0xFFB7FFE1),
+    secondary = Color(0xFF82AFA0),
+    onSecondary = Color(0xFF0C1F1A),
+    secondaryContainer = Color(0xFF1A2E29),
+    onSecondaryContainer = Color(0xFFC4E8DC),
+    tertiary = Color(0xFFE9BE6A),
+    onTertiary = Color(0xFF2A1F08),
+    background = Color(0xFF070B0D),
+    onBackground = Color(0xFFE2ECE8),
+    surface = Color(0xFF101719),
+    onSurface = Color(0xFFE2ECE8),
+    surfaceVariant = Color(0xFF1A2527),
+    onSurfaceVariant = Color(0xFFA9BDB7),
+    surfaceContainerLowest = Color(0xFF050809),
+    surfaceContainerLow = Color(0xFF0C1214),
+    surfaceContainer = Color(0xFF101719),
+    surfaceContainerHigh = Color(0xFF162024),
+    surfaceContainerHighest = Color(0xFF1C282C),
+    outline = Color(0xFF3D514E),
+    outlineVariant = Color(0xFF24342F),
+    error = Color(0xFFE57373),
+    onError = Color(0xFF2B0A0A),
+    inverseSurface = Color(0xFFE2ECE8),
+    inverseOnSurface = Color(0xFF101719),
+    scrim = Color(0xFF000000)
 )
 
 private val DimVeilShapes = Shapes(
-    small = RoundedCornerShape(4.dp),
-    medium = RoundedCornerShape(6.dp),
-    large = RoundedCornerShape(8.dp)
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp)
 )
 
 @Composable
