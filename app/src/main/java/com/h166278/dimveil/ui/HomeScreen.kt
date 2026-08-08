@@ -187,12 +187,13 @@ private fun BrandHeader() {
 
 @Composable
 private fun EclipseMark(modifier: Modifier = Modifier) {
+    val corona = MaterialTheme.colorScheme.primary
     Canvas(modifier) {
         val center = Offset(size.width * 0.52f, size.height * 0.50f)
         val radius = size.minDimension * 0.42f
         // 日冕：只在黑色天体边缘露出一圈克制的冷青光
         drawCircle(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+            color = corona.copy(alpha = 0.72f),
             radius = radius + 1.5.dp.toPx(),
             center = center,
             style = Stroke(width = 1.2.dp.toPx())
