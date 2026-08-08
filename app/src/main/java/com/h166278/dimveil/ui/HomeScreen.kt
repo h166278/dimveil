@@ -278,6 +278,7 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
         label = "fillTop"
     )
     val glowAlpha by animateFloatAsState(if (active) 0.72f else 0f, label = "glow")
+    val eclipseProgress by animateFloatAsState(if (active) 1f else 0f, label = "eclipseProgress")
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.94f else 1f, label = "scale")
@@ -314,12 +315,22 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
             drawCircle(ringColor, radius = radius, center = center, style = Stroke(width = 5.dp.toPx()))
             // 外圈淡环
             drawCircle(ringColor.copy(alpha = 0.35f), radius = radius + 10.dp.toPx(), center = center, style = Stroke(width = 2.dp.toPx()))
-            // 日食主视觉：白色月牙被黑色天体逐步笼罩
+            // 日食主视觉：关闭时月牙与黑色天体靠近，开启时完全重合
+            val moonRadius = radius * 0.30f
             val moonCenter = center.copy(x = center.x - radius * 0.22f)
-            drawCircle(Color.White.copy(alpha = 0.95f), radius = radius * 0.30f, center = moonCenter)
-            drawCircle(Color(0xFF080D0F), radius = radius * 0.28f, center = center.copy(x = center.x + radius * 0.10f))
-            // 黑色天体边缘的冷青日冕
-            drawCircle(ringColor.copy(alpha = 0.80f), radius = radius * 0.29f, center = center.copy(x = center.x + radius * 0.10f), style = Stroke(width = 2.dp.toPx()))
+            val eclipseCenter = center.copy(
+                x = moonCenter.x + radius * (0.44f * (1f - eclipseProgress) + 0.22f) -
+                    if (pressed) radius * 0.16f else 0f
+            )
+            drawCircle(Color.White.copy(alpha = 0.95f * (1f - eclipseProgress)), radius = moonRadius, center = moonCenter)
+            drawCircle(Color(0xFF080D0F), radius = moonRadius * 0.96f, center = eclipseCenter)
+            // 开启后只保留黑色天体边缘的冷青日冕
+            drawCircle(
+                ringColor.copy(alpha = 0.80f),
+                radius = moonRadius * (0.96f + eclipseProgress * 0.05f),
+                center = eclipseCenter,
+                style = Stroke(width = 2.dp.toPx())
+            )
         }
 
     }
