@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.ModeNight
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
@@ -430,7 +429,8 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
 }
 
 private fun modeIcon(mode: DimMode, selected: Boolean): ImageVector = when (mode) {
-    DimMode.NIGHT -> if (selected) Icons.Filled.DarkMode else Icons.Outlined.ModeNight
+    // 夜间图标固定为图 2 的实心月牙；选中与未选中只改变颜色，不切换图形。
+    DimMode.NIGHT -> Icons.Filled.DarkMode
     DimMode.READING -> if (selected) Icons.Filled.MenuBook else Icons.Outlined.MenuBook
     DimMode.GAME -> if (selected) Icons.Filled.SportsEsports else Icons.Outlined.SportsEsports
     DimMode.CUSTOM -> if (selected) Icons.Filled.Tune else Icons.Outlined.Tune
