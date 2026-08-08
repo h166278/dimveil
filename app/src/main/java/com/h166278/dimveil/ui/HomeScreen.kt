@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BrightnessLow
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
@@ -54,7 +53,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -109,13 +107,13 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BrandHeader()
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(22.dp))
             GuardTitle(active = active, blocked = !state.canStart)
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
             CoreSwitch(active = active, enabled = state.canStart || active, onClick = onToggle)
             Spacer(Modifier.height(14.dp))
             OverlayStateLabel(state = state)
-            Spacer(Modifier.height(26.dp))
+            Spacer(Modifier.height(20.dp))
             ModeRow(mode = mode, onMode = onMode)
             Spacer(Modifier.height(14.dp))
             DepthCard(
@@ -286,7 +284,7 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
 
     Box(
         Modifier
-            .size(188.dp)
+            .size(172.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .semantics {
@@ -316,12 +314,14 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
             drawCircle(ringColor, radius = radius, center = center, style = Stroke(width = 5.dp.toPx()))
             // 外圈淡环
             drawCircle(ringColor.copy(alpha = 0.35f), radius = radius + 10.dp.toPx(), center = center, style = Stroke(width = 2.dp.toPx()))
-            // 核心亮点
-            drawCircle(coreColor, radius = radius * 0.22f, center = center)
-            // 顶部指示灯
-            drawLine(ringColor, Offset(center.x, center.y - radius * 0.78f), Offset(center.x, center.y - radius * 0.42f), strokeWidth = 7.dp.toPx(), cap = StrokeCap.Round)
+            // 日食主视觉：白色月牙被黑色天体逐步笼罩
+            val moonCenter = center.copy(x = center.x - radius * 0.22f)
+            drawCircle(Color.White.copy(alpha = 0.95f), radius = radius * 0.30f, center = moonCenter)
+            drawCircle(Color(0xFF080D0F), radius = radius * 0.28f, center = center.copy(x = center.x + radius * 0.10f))
+            // 黑色天体边缘的冷青日冕
+            drawCircle(ringColor.copy(alpha = 0.80f), radius = radius * 0.29f, center = center.copy(x = center.x + radius * 0.10f), style = Stroke(width = 2.dp.toPx()))
         }
-        Icon(Icons.Filled.BrightnessLow, contentDescription = "开启或关闭遮罩", tint = coreColor, modifier = Modifier.size(32.dp))
+
     }
 }
 
@@ -438,9 +438,8 @@ private fun StatusCard(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Panel)
-            .border(1.dp, PanelBorder, RoundedCornerShape(16.dp))
-            .clickable(onClick = onOpenAccessibility)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -455,10 +454,12 @@ private fun StatusCard(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(title, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleMedium)
+                Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
-            Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
+            TextButton(onClick = onOpenAccessibility) {
+                Text(if (accessibilityMissing) "去开启" else "已开启")
+            }
         }
     }
 }
