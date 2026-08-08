@@ -15,7 +15,6 @@ class DimAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        instance = this
         val overlayController = OverlayController(
             this,
             getSystemService(WindowManager::class.java)
@@ -36,7 +35,6 @@ class DimAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
-        instance = null
         detachHost()
         super.onDestroy()
     }
@@ -60,20 +58,5 @@ class DimAccessibilityService : AccessibilityService() {
     private fun detachHost() {
         controller?.let { AccessibilityOverlayHost.detach(this, it) }
         controller = null
-    }
-
-    companion object {
-        @Volatile
-        private var instance: DimAccessibilityService? = null
-
-        /**
-         * 请求系统禁用本无障碍服务（[AccessibilityService.disableSelf] 官方 API）。
-         * 仅服务运行（绑定）期间有效；禁用成功后 [onUnbind]/[onDestroy] 会
-         * detach 宿主，由 [AccessibilityOverlayHost] 通知 [com.h166278.dimveil.service.OverlayService]
-         * 重路由回普通悬浮窗遮罩。
-         */
-        fun disable() {
-            instance?.disableSelf()
-        }
     }
 }

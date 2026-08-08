@@ -2,6 +2,7 @@ package com.h166278.dimveil
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,12 +14,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.h166278.dimveil.MainViewModel.ToggleOutcome
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
 import com.h166278.dimveil.overlay.OverlayPermissionAutoReturn
 import com.h166278.dimveil.overlay.OverlayRuntime
+import com.h166278.dimveil.overlay.ShizukuAccessibility
 import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
+import dev.rikka.shizuku.Shizuku
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel by viewModels<MainViewModel>()
@@ -35,10 +41,23 @@ class MainActivity : ComponentActivity() {
         viewModel.refreshPermissions()
     }
 
+    // Shizuku 授权结果：同意后自动完成这次双击想做的切换，无需再双击一次
+    private val shizukuPermissionListener =
+        Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+            if (requestCode == ShizukuAccessibility.REQUEST_CODE) {
+                if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                    performAccessibilityToggle()
+                } else {
+                    Toast.makeText(this, R.string.shizuku_permission_denied, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 授权页转屏/重建后仍记得"授权成功要自动启动遮罩"
         pendingStartAfterGrant = savedInstanceState?.getBoolean(KEY_PENDING_START, false) ?: false
+        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             DimVeilTheme {
@@ -66,18 +85,35 @@ class MainActivity : ComponentActivity() {
                         if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn(this)
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     },
-                    onDoubleTapAccessibility = {
-                        if (viewModel.toggleAccessibility()) {
-                            // 已开启 → 请求系统禁用本服务，遮罩回退悬浮窗路径
-                            Toast.makeText(this, R.string.accessibility_disabled, Toast.LENGTH_SHORT).show()
-                        } else {
-                            // 未开启 → 系统不允许应用自动开启，跳设置页由用户手动拨开
-                            AccessibilityOverlayHost.armAutoReturn(this)
-                            Toast.makeText(this, R.string.accessibility_enable_hint, Toast.LENGTH_SHORT).show()
-                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                        }
-                    }
+                    onDoubleTapAccessibility = { performAccessibilityToggle() }
                 )
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
+        super.onDestroy()
+    }
+
+    /** 双击空白处：经 Shizuku 直接切换无障碍授权，不跳设置页 */
+    private fun performAccessibilityToggle() {
+        lifecycleScope.launch {
+            when (val outcome = viewModel.toggleAccessibility()) {
+                is ToggleOutcome.Toggled -> Toast.makeText(
+                    this@MainActivity,
+                    if (outcome.nowEnabled) R.string.accessibility_turned_on else R.string.accessibility_turned_off,
+                    Toast.LENGTH_SHORT
+                ).show()
+                ToggleOutcome.NeedPermission -> {
+                    // 首次使用：弹 Shizuku 授权申请，同意后自动完成切换
+                    ShizukuAccessibility.requestPermission()
+                    Toast.makeText(this@MainActivity, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
+                }
+                ToggleOutcome.ShizukuUnavailable ->
+                    Toast.makeText(this@MainActivity, R.string.shizuku_unavailable, Toast.LENGTH_SHORT).show()
+                ToggleOutcome.Failed ->
+                    Toast.makeText(this@MainActivity, R.string.accessibility_toggle_failed, Toast.LENGTH_SHORT).show()
             }
         }
     }

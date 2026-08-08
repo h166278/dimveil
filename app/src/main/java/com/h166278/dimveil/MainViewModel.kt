@@ -17,7 +17,7 @@ import com.h166278.dimveil.domain.DimSettings
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
 import com.h166278.dimveil.overlay.OverlayController
 import com.h166278.dimveil.overlay.OverlayRuntime
-import com.h166278.dimveil.service.DimAccessibilityService
+import com.h166278.dimveil.overlay.ShizukuAccessibility
 import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.MainUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +29,18 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+    /** 双击切换无障碍授权的结果 */
+    sealed interface ToggleOutcome {
+        /** 切换成功，[nowEnabled] 为切换后的授权状态 */
+        data class Toggled(val nowEnabled: Boolean) : ToggleOutcome
+        /** Shizuku 已运行但未授权本应用，需要弹授权申请 */
+        data object NeedPermission : ToggleOutcome
+        /** Shizuku 未运行 */
+        data object ShizukuUnavailable : ToggleOutcome
+        /** 执行系统命令失败 */
+        data object Failed : ToggleOutcome
+    }
+
     private data class Permissions(
         val canDraw: Boolean = false,
         val accessibilityEnabled: Boolean = false,
@@ -114,20 +126,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * 双击空白处切换无障碍权限：
-     * 已开启 → 请求系统禁用本服务（[DimAccessibilityService.disable]），返回 true；
-     * 未开启 → 返回 false，由调用方跳转系统无障碍设置页引导用户手动开启
-     * （Android 不允许应用编程式开启无障碍服务）。
+     * 双击空白处切换无障碍授权（等价系统无障碍快捷方式）：
+     * 通过 Shizuku 直接修改系统无障碍服务列表，无需跳转设置页。
+     * 返回切换结果：[ToggleOutcome.Toggled] 携带切换后的状态。
      */
-    fun toggleAccessibility(): Boolean {
-        if (!isAccessibilityEnabled()) return false
-        DimAccessibilityService.disable()
-        // disableSelf 异步生效：稍候再刷新权限状态，避免界面仍显示"已开启"
-        viewModelScope.launch {
-            delay(600)
+    suspend fun toggleAccessibility(): ToggleOutcome {
+        if (!ShizukuAccessibility.isAvailable()) return ToggleOutcome.ShizukuUnavailable
+        if (!ShizukuAccessibility.isGranted()) return ToggleOutcome.NeedPermission
+        return try {
+            val nowEnabled = ShizukuAccessibility.toggle()
+            // 系统异步绑定/解绑服务，稍候再刷新权限状态
+            delay(700)
             refreshPermissions()
+            ToggleOutcome.Toggled(nowEnabled)
+        } catch (e: Exception) {
+            ToggleOutcome.Failed
         }
-        return true
     }
 
     fun selectMode(selected: DimMode) {
