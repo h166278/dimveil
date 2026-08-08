@@ -1,78 +1,53 @@
 package com.h166278.dimveil
 
-import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.ComponentName
-import android.content.Context
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.LaunchedEffect
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.lifecycleScope
-import com.h166278.dimveil.data.DataStoreDimPreferences
-import com.h166278.dimveil.domain.DimMode
-import com.h166278.dimveil.service.OverlayService
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val preferences by lazy { DataStoreDimPreferences(this) }
-
-    // 类级 Compose 状态：可在 onResume 等生命周期回调中刷新，UI 自动重组
-    private var active by mutableStateOf(false)
-    private var mode by mutableStateOf(DimMode.NIGHT)
-    private var depth by mutableStateOf(DimMode.NIGHT.defaultDepth)
-    private var accessibilityEnabled by mutableStateOf(false)
-    private var canDraw by mutableStateOf(false)
+    private val viewModel by viewModels<MainViewModel>()
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        viewModel.refreshPermissions()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        refreshPermissionStates()
         setContent {
-            LaunchedEffect(Unit) {
-                val settings = preferences.settings.first()
-                mode = settings.mode
-                depth = settings.depth
-            }
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             DimVeilTheme {
                 HomeScreen(
-                    context = this,
-                    active = active,
-                    mode = mode,
-                    depth = depth,
-                    accessibilityEnabled = accessibilityEnabled,
-                    canDraw = canDraw,
+                    state = state,
                     onToggle = {
-                        if (active) {
-                            OverlayService.stop(this)
-                            active = false
-                        } else if (canDraw) {
-                            OverlayService.start(this, depth, mode)
-                            active = true
+                        val wasActive = state.active
+                        if (viewModel.toggleOverlay()) {
+                            if (!wasActive) {
+                                requestNotificationPermissionIfNeeded(state.notificationsAllowed)
+                            }
+                        } else if (state.accessibilityEnabled) {
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                         } else {
-                            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                            openOverlayPermission()
                         }
                     },
-                    onMode = { selected ->
-                        mode = selected
-                        depth = selected.depth(depth)
-                        lifecycleScope.launch { preferences.selectMode(selected) }
-                    },
-                    onDepth = { value ->
-                        depth = value.coerceIn(0, 90)
-                        lifecycleScope.launch { preferences.setDepth(depth) }
-                        if (active) OverlayService.start(this, depth, mode)
-                    },
-                    onAccessibilityRefresh = { accessibilityEnabled = isAccessibilityEnabled() }
+                    onMode = viewModel::selectMode,
+                    onDepthPreview = viewModel::previewDepth,
+                    onDepthCommit = viewModel::commitDepth,
+                    onOpenAccessibility = {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
                 )
             }
         }
@@ -80,19 +55,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 从系统权限/无障碍设置返回后刷新状态，UI 立即反映最新权限
-        refreshPermissionStates()
+        viewModel.refreshPermissions()
     }
 
-    private fun refreshPermissionStates() {
-        canDraw = OverlayService.canDraw(this)
-        accessibilityEnabled = isAccessibilityEnabled()
+    private fun openOverlayPermission() {
+        startActivity(
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+        )
     }
 
-    private fun isAccessibilityEnabled(): Boolean {
-        val manager = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val expected = ComponentName(this, com.h166278.dimveil.service.DimAccessibilityService::class.java).flattenToString()
-        return manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-            .any { it.resolveInfo.serviceInfo.let { info -> ComponentName(info.packageName, info.name).flattenToString() == expected } }
+    private fun requestNotificationPermissionIfNeeded(alreadyAllowed: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !alreadyAllowed) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }

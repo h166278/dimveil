@@ -1,8 +1,5 @@
 package com.h166278.dimveil.ui
 
-import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -64,11 +61,18 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.h166278.dimveil.BuildConfig
 import com.h166278.dimveil.domain.DimMode
+import com.h166278.dimveil.overlay.OverlayError
+import com.h166278.dimveil.overlay.OverlayHostKind
 
 // —— 暗幕色板 ——
 private val Ink = Color(0xFF070B0D)
@@ -85,18 +89,18 @@ private val StatusWarnBg = Color(0xFF3A3220)
 
 @Composable
 fun HomeScreen(
-    context: Context,
-    active: Boolean,
-    mode: DimMode,
-    depth: Int,
-    accessibilityEnabled: Boolean,
-    canDraw: Boolean,
+    state: MainUiState,
     onToggle: () -> Unit,
     onMode: (DimMode) -> Unit,
-    onDepth: (Int) -> Unit,
-    onAccessibilityRefresh: () -> Unit
+    onDepthPreview: (Int) -> Unit,
+    onDepthCommit: () -> Unit,
+    onOpenAccessibility: () -> Unit
 ) {
     var showAccessibility by remember { mutableStateOf(false) }
+    val active = state.active
+    val mode = state.mode
+    val depth = state.depth
+    val accessibilityEnabled = state.accessibilityEnabled
 
     Box(Modifier.fillMaxSize().background(Ink)) {
         // 顶部能量核心氛围光晕
@@ -115,7 +119,7 @@ fun HomeScreen(
                 .padding(horizontal = 22.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BrandHeader(accessibilityEnabled = accessibilityEnabled, onClick = { showAccessibility = true; onAccessibilityRefresh() })
+            BrandHeader(accessibilityEnabled = accessibilityEnabled, onClick = { showAccessibility = true })
             Spacer(Modifier.height(28.dp))
             GuardTitle(active = active)
             Spacer(Modifier.height(22.dp))
@@ -133,9 +137,13 @@ fun HomeScreen(
             Spacer(Modifier.height(22.dp))
             ModeRow(mode = mode, onMode = onMode)
             Spacer(Modifier.height(14.dp))
-            DepthCard(depth = depth, onDepth = onDepth)
+            DepthCard(
+                depth = depth,
+                onDepthPreview = onDepthPreview,
+                onDepthCommit = onDepthCommit
+            )
             Spacer(Modifier.height(14.dp))
-            StatusCard(accessibilityEnabled = accessibilityEnabled, canDraw = canDraw)
+            StatusCard(state = state)
             Spacer(Modifier.height(20.dp))
             Text(
                 "暗幕 v${BuildConfig.VERSION_NAME} · 离线无追踪",
@@ -159,8 +167,8 @@ fun HomeScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)); showAccessibility = false }) {
-                    Text("去开启")
+                TextButton(onClick = { onOpenAccessibility(); showAccessibility = false }) {
+                    Text(if (accessibilityEnabled) "系统设置" else "去开启")
                 }
             },
             dismissButton = {
@@ -253,6 +261,10 @@ private fun CoreSwitch(active: Boolean, onClick: () -> Unit) {
             .size(188.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
+            .semantics {
+                role = Role.Switch
+                stateDescription = if (active) "遮罩已开启" else "遮罩已关闭"
+            }
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -296,6 +308,10 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
                     .clip(RoundedCornerShape(14.dp))
                     .background(bg)
                     .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+                    .semantics {
+                        this.selected = selected
+                        role = Role.RadioButton
+                    }
                     .clickable { onMode(item) },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -316,7 +332,11 @@ private fun modeIcon(mode: DimMode): ImageVector = when (mode) {
 }
 
 @Composable
-private fun DepthCard(depth: Int, onDepth: (Int) -> Unit) {
+private fun DepthCard(
+    depth: Int,
+    onDepthPreview: (Int) -> Unit,
+    onDepthCommit: () -> Unit
+) {
     val animatedDepth by animateIntAsState(depth, label = "depth")
     Column(
         Modifier
@@ -350,7 +370,8 @@ private fun DepthCard(depth: Int, onDepth: (Int) -> Unit) {
         Spacer(Modifier.height(6.dp))
         Slider(
             value = depth.toFloat(),
-            onValueChange = { onDepth(it.toInt()) },
+            onValueChange = { onDepthPreview(it.toInt()) },
+            onValueChangeFinished = onDepthCommit,
             valueRange = 0f..90f,
             colors = SliderDefaults.colors(thumbColor = Mint, activeTrackColor = Mint, inactiveTrackColor = TrackInactive)
         )
@@ -365,7 +386,24 @@ private fun DepthCard(depth: Int, onDepth: (Int) -> Unit) {
 }
 
 @Composable
-private fun StatusCard(accessibilityEnabled: Boolean, canDraw: Boolean) {
+private fun StatusCard(state: MainUiState) {
+    val healthy = state.error == null && (state.active || state.canStart)
+    val title = when (state.host) {
+        OverlayHostKind.ACCESSIBILITY -> "无障碍全屏覆盖运行中"
+        OverlayHostKind.NORMAL -> "普通悬浮窗覆盖运行中"
+        null -> if (state.accessibilityReady) "无障碍覆盖已准备" else "普通悬浮窗覆盖"
+    }
+    val detail = when {
+        state.error == OverlayError.NO_AVAILABLE_HOST -> "没有可用的覆盖权限"
+        state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
+        state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
+        state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
+        !state.notificationsAllowed -> "通知权限未开启，请从应用内关闭遮罩"
+        state.accessibilityEnabled && !state.accessibilityReady -> "无障碍服务正在连接"
+        state.canDraw || state.accessibilityReady -> "覆盖权限已准备"
+        else -> "开启时将请求悬浮窗权限"
+    }
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -379,30 +417,30 @@ private fun StatusCard(accessibilityEnabled: Boolean, canDraw: Boolean) {
             Modifier
                 .size(38.dp)
                 .clip(CircleShape)
-                .background(if (accessibilityEnabled) Color(0xFF1D3C35) else StatusWarnBg),
+                .background(if (healthy) Color(0xFF1D3C35) else StatusWarnBg),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                if (accessibilityEnabled) Icons.Filled.Verified else Icons.Filled.Shield,
+                if (healthy) Icons.Filled.Verified else Icons.Filled.Shield,
                 contentDescription = null,
-                tint = if (accessibilityEnabled) Mint else Amber,
+                tint = if (healthy) Mint else Amber,
                 modifier = Modifier.size(20.dp)
             )
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                if (accessibilityEnabled) "无障碍全屏覆盖" else "普通悬浮窗覆盖",
+                title,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
             Text(
-                if (canDraw) "覆盖权限已准备" else "开启时将请求悬浮窗权限",
+                detail,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }
-        Box(Modifier.size(8.dp).clip(CircleShape).background(if (canDraw) Mint else Amber))
+        Box(Modifier.size(8.dp).clip(CircleShape).background(if (healthy) Mint else Amber))
     }
 }

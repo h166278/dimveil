@@ -9,9 +9,8 @@ jobs:
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v5
-        with: { gradle-version: '8.10.2' }
-      - name: Unit tests and debug APK
-        run: gradle testDebugUnitTest assembleDebug --stacktrace
+      - name: Unit tests, lint and debug APK
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
       - name: Policy scan
         run: |
           ! grep -RniE 'android.permission.INTERNET|WRITE_SETTINGS|firebase|analytics|auto.?click|贝利亚|赛罗' app/src README.md || exit 1
