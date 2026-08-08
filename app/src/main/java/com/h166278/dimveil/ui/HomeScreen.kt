@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
@@ -98,15 +99,10 @@ fun HomeScreen(
     val depth = state.depth
     val accessibilityEnabled = state.accessibilityEnabled
 
-    // 双击空白处切换无障碍权限：子组件（开关/滑杆/按钮/模式卡）消费点击事件，
-    // detectTapGestures 检测到事件被消费会取消双击判定，因此只在空白处触发。
     Box(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .pointerInput(Unit) {
-                detectTapGestures(onDoubleTap = { onDoubleTapAccessibility() })
-            }
     ) {
         Column(
             Modifier
@@ -116,7 +112,10 @@ fun HomeScreen(
                 .padding(horizontal = 22.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BrandHeader()
+            BrandHeader(
+                accessibilityEnabled = accessibilityEnabled,
+                onDoubleTapAccessibility = onDoubleTapAccessibility
+            )
             Spacer(Modifier.height(22.dp))
             GuardTitle(active = active, blocked = !state.canStart)
             Spacer(Modifier.height(14.dp))
@@ -171,7 +170,10 @@ fun HomeScreen(
 }
 
 @Composable
-private fun BrandHeader() {
+private fun BrandHeader(
+    accessibilityEnabled: Boolean,
+    onDoubleTapAccessibility: () -> Unit
+) {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -193,7 +195,30 @@ private fun BrandHeader() {
                 Text("DIM VEIL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 3.sp)
             }
         }
-        Spacer(Modifier.width(42.dp))
+        // 右上角无障碍快捷图标：双击直接经 Shizuku 开/关无障碍授权。
+        // 单击不执行操作，避免与隐藏快捷方式产生误触。
+        Box(
+            Modifier
+                .size(48.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = { onDoubleTapAccessibility() }
+                    )
+                }
+                .semantics {
+                    role = Role.Button
+                    stateDescription = if (accessibilityEnabled) "无障碍已开启" else "无障碍已关闭"
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AccessibilityNew,
+                contentDescription = "无障碍快捷切换",
+                tint = if (accessibilityEnabled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
 
