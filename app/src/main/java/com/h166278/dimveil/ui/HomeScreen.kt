@@ -29,13 +29,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrightnessLow
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.ModeNight
+import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -353,10 +353,10 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
 }
 
 private fun modeIcon(mode: DimMode): ImageVector = when (mode) {
-    DimMode.NIGHT -> Icons.Filled.DarkMode
-    DimMode.READING -> Icons.Filled.MenuBook
-    DimMode.GAME -> Icons.Filled.SportsEsports
-    DimMode.CUSTOM -> Icons.Filled.Tune
+    DimMode.NIGHT -> Icons.Outlined.ModeNight
+    DimMode.READING -> Icons.Outlined.MenuBook
+    DimMode.GAME -> Icons.Outlined.SportsEsports
+    DimMode.CUSTOM -> Icons.Outlined.Tune
 }
 
 @Composable
