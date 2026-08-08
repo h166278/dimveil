@@ -14,10 +14,12 @@ updates:
       # Gradle 9 大版本变更，锁定 8.x
       - dependency-name: "gradle-wrapper"
         versions: [">=9.0.0"]
-      # Kotlin 2.3+ 工具链变更，锁定 2.2.x
+      # Kotlin 2.3+ 工具链变更，锁定 2.2.x（compose 插件必须与 kotlin.android 同版本）
       - dependency-name: "org.jetbrains.kotlin.android"
         versions: [">=2.3.0"]
       - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
+        versions: [">=2.3.0"]
+      - dependency-name: "org.jetbrains.kotlin.plugin.compose"
         versions: [">=2.3.0"]
       # core-ktx 1.19+ 要求更高 compileSdk/工具链，锁定 1.18.x
       - dependency-name: "androidx.core:core-ktx"
