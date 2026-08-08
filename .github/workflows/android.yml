@@ -8,7 +8,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '17' }
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Unit tests, lint and debug APK
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
       - name: Policy scan
