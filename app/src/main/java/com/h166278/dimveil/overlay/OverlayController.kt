@@ -34,6 +34,11 @@ class OverlayController(
             android.graphics.PixelFormat.TRANSLUCENT
         ).apply {
             alpha = params.alpha
+            // Overlay windows must opt out of system-bar insets to dim the status bar.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) fitInsetsTypes = 0
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
         }
         try {
             if (layer.parent == null) {
