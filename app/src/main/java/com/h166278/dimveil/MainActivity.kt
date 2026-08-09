@@ -280,7 +280,7 @@ class MainActivity : ComponentActivity() {
             if (!stillPending) return@launch
             pendingAutoAccessibilityStart = false
             pendingAutoAccessibilityGrant = false
-            restoreOverlayAfterShizuku()
+            // 即将打开系统无障碍设置，保持遮罩停止，避免再次覆盖系统页面
             Toast.makeText(this@MainActivity, R.string.auto_accessibility_grant_timeout, Toast.LENGTH_SHORT).show()
             AccessibilityOverlayHost.armAutoReturn(this@MainActivity)
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
