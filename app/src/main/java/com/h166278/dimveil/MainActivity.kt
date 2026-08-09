@@ -37,6 +37,8 @@ class MainActivity : ComponentActivity() {
     private var notificationDeniedPermanently = false
     /** 自动开启无障碍遮罩时，Shizuku 授权弹窗同意后续跑自动开启流程 */
     private var pendingAutoAccessibilityStart = false
+    /** 选择「自动无障碍」时，Shizuku 授权弹窗同意后自动开启无障碍权限 */
+    private var pendingAutoAccessibilityGrant = false
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -48,23 +50,30 @@ class MainActivity : ComponentActivity() {
         viewModel.refreshPermissions()
     }
 
-    // Shizuku 授权结果：同意后自动完成这次想做的切换，无需再操作一次
+    // Shizuku 授权结果：同意后自动完成这次想做的操作，无需再操作一次
     private val shizukuPermissionListener =
         Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
             if (requestCode == ShizukuAccessibility.REQUEST_CODE) {
                 if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                    if (pendingAutoAccessibilityStart) {
+                    when {
                         // 自动开启无障碍遮罩流程：开权限 → 等服务连接 → 启动遮罩
-                        pendingAutoAccessibilityStart = false
-                        lifecycleScope.launch {
-                            val saved = viewModel.waitForSettings()
-                            autoStartAccessibility(saved)
+                        pendingAutoAccessibilityStart -> {
+                            pendingAutoAccessibilityStart = false
+                            lifecycleScope.launch {
+                                val saved = viewModel.waitForSettings()
+                                autoStartAccessibility(saved)
+                            }
                         }
-                    } else {
-                        performAccessibilityToggle()
+                        // 选择「自动无障碍」：开权限，遮罩等下次进入自动启动
+                        pendingAutoAccessibilityGrant -> {
+                            pendingAutoAccessibilityGrant = false
+                            lifecycleScope.launch { grantAccessibilityAndNotify() }
+                        }
+                        else -> performAccessibilityToggle()
                     }
                 } else {
                     pendingAutoAccessibilityStart = false
+                    pendingAutoAccessibilityGrant = false
                     Toast.makeText(this, R.string.shizuku_permission_denied, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -103,7 +112,10 @@ class MainActivity : ComponentActivity() {
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     },
                     onDoubleTapAccessibility = { performAccessibilityToggle() },
-                    onAutoStartChange = viewModel::setAutoStartMode
+                    onAutoStartChange = { mode ->
+                        viewModel.setAutoStartMode(mode)
+                        if (mode == AutoStartMode.ACCESSIBILITY) ensureShizukuForAutoAccessibility()
+                    }
                 )
             }
         }
@@ -175,6 +187,40 @@ class MainActivity : ComponentActivity() {
                     AutoStartMode.ACCESSIBILITY -> autoStartAccessibility(saved)
                 }
             }
+        }
+    }
+
+    /**
+     * 用户选择「自动无障碍」时立即准备：确保 Shizuku 已授权并开启无障碍权限，
+     * 这样下次重新打开暗幕时即可直接自动启动无障碍遮罩。
+     * - 权限已开：无需操作；
+     * - Shizuku 已授权：直接开启权限；
+     * - Shizuku 未授权：弹授权申请，同意后自动开启权限；
+     * - Shizuku 未运行：提示，下次进入时走系统设置页半自动流程。
+     */
+    private fun ensureShizukuForAutoAccessibility() {
+        if (viewModel.uiState.value.accessibilityEnabled) return
+        when {
+            ShizukuAccessibility.isAvailable() && ShizukuAccessibility.isGranted() -> {
+                lifecycleScope.launch { grantAccessibilityAndNotify() }
+            }
+            ShizukuAccessibility.isAvailable() -> {
+                pendingAutoAccessibilityGrant = true
+                ShizukuAccessibility.requestPermission()
+                Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                Toast.makeText(this, R.string.shizuku_unavailable, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /** 开启无障碍权限并提示结果（授权已就绪时调用） */
+    private suspend fun grantAccessibilityAndNotify() {
+        if (viewModel.enableAccessibility()) {
+            Toast.makeText(this, R.string.auto_accessibility_enabled, Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, R.string.accessibility_toggle_failed, Toast.LENGTH_SHORT).show()
         }
     }
 
