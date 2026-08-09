@@ -519,23 +519,12 @@ private fun DepthCard(
         }
         Spacer(Modifier.height(6.dp))
         val view = LocalView.current
-        Box(Modifier.fillMaxWidth()) {
-            Slider(
-                modifier = Modifier.fillMaxWidth(),
-                value = depth.toFloat(),
-                onValueChange = { onDepthPreview(it.toInt()) },
-                onValueChangeFinished = onDepthCommit,
-                valueRange = 0f..90f,
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = TrackInactive
-                )
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .size(40.dp),
+                modifier = Modifier.size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -550,10 +539,20 @@ private fun DepthCard(
                     modifier = Modifier.size(22.dp)
                 )
             }
+            Slider(
+                modifier = Modifier.weight(1f),
+                value = depth.toFloat(),
+                onValueChange = { onDepthPreview(it.toInt()) },
+                onValueChangeFinished = onDepthCommit,
+                valueRange = 0f..90f,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = TrackInactive
+                )
+            )
             TextButton(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(40.dp),
+                modifier = Modifier.size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
