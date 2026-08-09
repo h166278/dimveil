@@ -128,6 +128,7 @@ fun HomeScreen(
             ModeRow(mode = mode, onMode = onMode)
             Spacer(Modifier.height(14.dp))
             DepthCard(
+                state = state,
                 depth = depth,
                 onDepthPreview = onDepthPreview,
                 onDepthCommit = onDepthCommit
@@ -291,7 +292,6 @@ private fun OverlayStateLabel(state: MainUiState) {
     val warn = when {
         state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
         state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
-        state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
         !state.accessibilityEnabled -> "开启无障碍可覆盖状态栏、通知栏，获得更完整的遮罩效果"
         else -> null
     }
@@ -464,6 +464,7 @@ private fun modeIcon(mode: DimMode, selected: Boolean): ImageVector = when (mode
 
 @Composable
 private fun DepthCard(
+    state: MainUiState,
     depth: Int,
     onDepthPreview: (Int) -> Unit,
     onDepthCommit: () -> Unit
@@ -506,11 +507,17 @@ private fun DepthCard(
             valueRange = 0f..90f,
             colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
         )
-        if (depth >= 80) {
+        // 深度卡片只显示一条与深度直接相关的提示：实际安全裁剪优先于高深度提醒。
+        val depthWarning = when {
+            state.depthLimited -> "悬浮窗模式最高支持 ${state.appliedDepth}%，已按系统安全限制调整"
+            depth >= 80 -> "深度较高，请确认仍能看清屏幕"
+            else -> null
+        }
+        if (depthWarning != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("深度较高，请确认仍能看清屏幕", color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
+                Text(depthWarning, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
             }
         }
     }
