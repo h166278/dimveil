@@ -510,7 +510,7 @@ private fun DepthCard(
         // 深度卡片只显示一条与深度直接相关的提示：实际安全裁剪优先于高深度提醒。
         val depthWarning = when {
             state.depthLimited -> "悬浮窗模式最高支持 ${state.appliedDepth}%，已按系统安全限制调整"
-            depth >= 80 -> "深度较高，请确认仍能看清屏幕"
+            state.committedDepth >= 80 -> "深度较高，请确认仍能看清屏幕"
             else -> null
         }
         if (depthWarning != null) {

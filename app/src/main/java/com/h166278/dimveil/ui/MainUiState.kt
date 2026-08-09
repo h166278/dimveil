@@ -9,6 +9,7 @@ data class MainUiState(
     val active: Boolean = false,
     val mode: DimMode = DimMode.NIGHT,
     val depth: Int = DimMode.NIGHT.defaultDepth,
+    val committedDepth: Int = DimMode.NIGHT.defaultDepth,
     val appliedDepth: Int = 0,
     val host: OverlayHostKind? = null,
     val accessibilityEnabled: Boolean = false,
@@ -20,5 +21,5 @@ data class MainUiState(
 ) {
     val canStart: Boolean get() = accessibilityReady || canDraw
     val depthLimited: Boolean
-        get() = active && host == OverlayHostKind.NORMAL && appliedDepth < depth
+        get() = active && host == OverlayHostKind.NORMAL && appliedDepth < committedDepth
 }

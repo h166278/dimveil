@@ -91,6 +91,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             active = overlay.active,
             mode = presented.mode,
             depth = presented.depth,
+            committedDepth = presented.mode.depth(presented.customDepth),
             appliedDepth = overlay.appliedDepth,
             host = overlay.host,
             accessibilityEnabled = permission.accessibilityEnabled,
