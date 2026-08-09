@@ -612,7 +612,7 @@ private fun AutoStartCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
@@ -621,13 +621,19 @@ private fun AutoStartCard(
                     tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(16.dp)
                 )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    "无障碍权限未开启",
-                    color = MaterialTheme.colorScheme.tertiary,
-                    fontSize = 12.sp,
-                    modifier = Modifier.weight(1f)
-                )
+                Spacer(Modifier.width(8.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "无障碍权限未开启",
+                        color = MaterialTheme.colorScheme.tertiary,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        "开启后可覆盖状态栏、通知栏；仅显示遮罩，不读取或操作屏幕。",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 TextButton(onClick = onOpenAccessibility) { Text("去开启") }
             }
         }
