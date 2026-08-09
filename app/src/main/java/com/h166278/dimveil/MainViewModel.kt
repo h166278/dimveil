@@ -101,6 +101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             notificationsAllowed = permission.notificationsAllowed,
             normalMaxDepth = OverlayController.normalMaxDepth(app),
             autoStart = presented.autoStart,
+            loaded = true,
             error = overlay.error
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MainUiState())
