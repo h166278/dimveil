@@ -51,6 +51,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val permissions = MutableStateFlow(Permissions())
     private val previewDepth = MutableStateFlow<Int?>(null)
     private val modeOverride = MutableStateFlow<DimMode?>(null)
+    private val depthWasClamped = MutableStateFlow(false)
 
     // 深度滑杆节流：服务端窗口更新昂贵（IPC + updateViewLayout），
     // 拖动时按移动量/时间合并发送，UI 预览保持即时。
@@ -85,8 +86,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         presentedSettings,
         OverlayRuntime.state,
         permissions,
-        AccessibilityOverlayHost.availability
-    ) { presented, overlay, permission, accessibilityReady ->
+        AccessibilityOverlayHost.availability,
+        depthWasClamped
+    ) { presented, overlay, permission, accessibilityReady, wasClamped ->
         MainUiState(
             active = overlay.active,
             mode = presented.mode,
@@ -99,7 +101,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             canDraw = permission.canDraw,
             normalMaxDepth = OverlayController.normalMaxDepth(app),
             autoStartMode = presented.autoStartMode,
-            error = overlay.error
+            error = overlay.error,
+            depthWasClamped = wasClamped
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MainUiState())
 
@@ -183,17 +186,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun previewDepth(value: Int) {
         val safe = DimMode.clamp(value)
         previewDepth.value = safe
+        if (safe <= OverlayController.normalMaxDepth(app)) depthWasClamped.value = false
         pushDepthUpdate(safe)
     }
 
     fun commitDepth() {
         val value = previewDepth.value ?: return
         viewModelScope.launch {
-            preferences.setDepth(value)
+            val runtime = OverlayRuntime.state.value
+            val max = OverlayController.normalMaxDepth(app)
+            val clamped = runtime.active && runtime.host == com.h166278.dimveil.overlay.OverlayHostKind.NORMAL && value > max
+            val finalValue = if (clamped) max else value
+            depthWasClamped.value = clamped
+            preferences.setDepth(finalValue)
             previewDepth.value = null
-            // 节流可能吞掉拖动中间值，松手时强制补发最终深度
-            if (OverlayRuntime.state.value.active) {
-                OverlayService.update(app, value, uiState.value.mode)
+            // 普通悬浮窗松手超过安全上限时，自动回到上限并补发最终值。
+            if (runtime.active) {
+                OverlayService.update(app, finalValue, uiState.value.mode)
             }
         }
     }

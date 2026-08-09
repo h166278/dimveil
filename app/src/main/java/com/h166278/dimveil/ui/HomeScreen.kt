@@ -1,5 +1,6 @@
 package com.h166278.dimveil.ui
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -65,6 +66,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -500,13 +502,29 @@ private fun DepthCard(
             }
         }
         Spacer(Modifier.height(6.dp))
-        Slider(
-            value = depth.toFloat(),
-            onValueChange = { onDepthPreview(it.toInt()) },
-            onValueChangeFinished = onDepthCommit,
-            valueRange = 0f..90f,
-            colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
-        )
+        val view = LocalView.current
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = { onDepthPreview((depth - 1).coerceAtLeast(0)); onDepthCommit() }) {
+                Text("−", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Slider(
+                modifier = Modifier.weight(1f),
+                value = depth.toFloat(),
+                onValueChange = {
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    onDepthPreview(it.toInt())
+                },
+                onValueChangeFinished = onDepthCommit,
+                valueRange = 0f..90f,
+                colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
+            )
+            TextButton(onClick = { onDepthPreview((depth + 1).coerceAtMost(90)); onDepthCommit() }) {
+                Text("+", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         // 深度卡片只显示一条与深度直接相关的提示：实际安全裁剪优先于高深度提醒。
         val depthWarning = when {
             state.depthLimited -> "悬浮窗模式最高支持 ${state.appliedDepth}%，已按系统安全限制调整"

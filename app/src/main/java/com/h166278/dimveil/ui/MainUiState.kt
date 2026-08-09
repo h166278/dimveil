@@ -17,9 +17,10 @@ data class MainUiState(
     val canDraw: Boolean = false,
     val normalMaxDepth: Int = 80,
     val autoStartMode: AutoStartMode = AutoStartMode.OFF,
-    val error: OverlayError? = null
+    val error: OverlayError? = null,
+    val depthWasClamped: Boolean = false
 ) {
     val canStart: Boolean get() = accessibilityReady || canDraw
     val depthLimited: Boolean
-        get() = active && host == OverlayHostKind.NORMAL && appliedDepth < committedDepth
+        get() = depthWasClamped || (active && host == OverlayHostKind.NORMAL && appliedDepth < committedDepth)
 }
