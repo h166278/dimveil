@@ -13,8 +13,8 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
         run: |
-          mkdir -p keystore
-          echo "$KEYSTORE_B64" | base64 -d > keystore/dimveil-release.jks
+          mkdir -p app/keystore
+          echo "$KEYSTORE_B64" | base64 -d > app/keystore/dimveil-release.jks
       - name: Unit tests, lint and APKs
         env:
           KEYSTORE_PATH: keystore/dimveil-release.jks
