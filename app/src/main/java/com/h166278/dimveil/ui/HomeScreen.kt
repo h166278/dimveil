@@ -295,17 +295,27 @@ private fun OverlayStateLabel(state: MainUiState) {
         !state.accessibilityEnabled -> "开启无障碍可覆盖状态栏、通知栏，获得更完整的遮罩效果"
         else -> null
     }
-    if (warn != null) {
-        Spacer(Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Filled.WarningAmber,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.size(12.dp)
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(warn, color = MaterialTheme.colorScheme.tertiary, fontSize = 11.sp)
+    // 固定提示槽高度：无障碍开启后提示消失，但下方三个区域不跳动。
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(24.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        if (warn != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Icon(
+                    Icons.Filled.WarningAmber,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(12.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(warn, color = MaterialTheme.colorScheme.tertiary, fontSize = 11.sp)
+            }
         }
     }
 }
