@@ -42,21 +42,21 @@ class DimAccessibilityService : AccessibilityService() {
     private fun restoreTask(taskId: Int) {
         val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appTask = am.appTasks.firstOrNull { it.taskInfo.id == taskId }
-        val moved = appTask != null && runCatching {
-            // 复用原任务，避免后台 startActivity 被 MIUI 等系统拦截
+        val restored = appTask != null && runCatching {
+            // Settings 页面会压入暗幕任务栈；CLEAR_TOP 先清掉它们，再恢复主页。
+            appTask.startActivity(this, homeIntent(), null)
             appTask.moveToFront()
             true
         }.getOrDefault(false)
-        if (moved) return
-        // 原任务已被清理（如系统回收）或 moveToFront 受限：新建任务带回
-        runCatching {
-            startActivity(
-                Intent(this, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                }
-            )
-        }
+        if (restored) return
+        // 原任务已被清理或 AppTask 恢复失败：新建任务带回主页
+        runCatching { startActivity(homeIntent(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
+
+    private fun homeIntent(extraFlags: Int = 0) =
+        Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or extraFlags)
+        }
 
     private fun detachHost() {
         controller?.let { AccessibilityOverlayHost.detach(this, it) }

@@ -59,23 +59,28 @@ object OverlayPermissionAutoReturn {
         deadline = 0
     }
 
-    /** 恢复暗幕任务到前台；任务丢失或 moveToFront 被 ROM 限制时兜底新建任务 */
+    /**
+     * 恢复暗幕主页到前台。
+     *
+     * MIUI 会把 Settings 的授权 Activity 压入暗幕自己的任务栈，单纯 moveToFront()
+     * 只会把仍以 Settings 为顶部 Activity 的任务带到前台。必须在原任务中以
+     * CLEAR_TOP 启动 MainActivity，先清掉 Settings 页面，再恢复主页。
+     */
     private fun restoreTask(context: Context, taskId: Int) {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appTask = am.appTasks.firstOrNull { it.taskInfo.id == taskId }
-        val moved = appTask != null && runCatching {
-            // 移动自己的任务到前台不需要后台启动权限（Android 10+）
+        val restored = appTask != null && runCatching {
+            appTask.startActivity(context, homeIntent(context), null)
             appTask.moveToFront()
             true
         }.getOrDefault(false)
-        if (moved) return
-        // 原任务不可用：新建任务带回前台（MIUI 可能拦截后台启动，尽力而为）
-        runCatching {
-            context.startActivity(
-                Intent(context, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                }
-            )
-        }
+        if (restored) return
+        // 原任务已被清理：新建任务带回主页（MIUI 可能拦截后台启动，尽力而为）
+        runCatching { context.startActivity(homeIntent(context, Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
+
+    private fun homeIntent(context: Context, extraFlags: Int = 0) =
+        Intent(context, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or extraFlags)
+        }
 }
