@@ -314,16 +314,16 @@ private fun OverlayStateLabel(state: MainUiState) {
         if (warn != null) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.height(20.dp)
             ) {
                 Icon(
                     Icons.Filled.WarningAmber,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(12.dp)
+                    modifier = Modifier.size(14.dp)
                 )
-                Spacer(Modifier.width(4.dp))
-                Text(warn, color = MaterialTheme.colorScheme.tertiary, fontSize = 11.sp)
+                Spacer(Modifier.width(6.dp))
+                Text(warn, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
             }
         }
     }
@@ -510,12 +510,26 @@ private fun DepthCard(
         }
         Spacer(Modifier.height(6.dp))
         val view = LocalView.current
-        Row(
-            Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Box(Modifier.fillMaxWidth()) {
+            Slider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                value = depth.toFloat(),
+                onValueChange = { onDepthPreview(it.toInt()) },
+                onValueChangeFinished = onDepthCommit,
+                valueRange = 0f..90f,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = TrackInactive
+                )
+            )
             TextButton(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = (-8).dp)
+                    .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -530,16 +544,11 @@ private fun DepthCard(
                     modifier = Modifier.size(22.dp)
                 )
             }
-            Slider(
-                modifier = Modifier.weight(1f),
-                value = depth.toFloat(),
-                onValueChange = { onDepthPreview(it.toInt()) },
-                onValueChangeFinished = onDepthCommit,
-                valueRange = 0f..90f,
-                colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
-            )
             TextButton(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 8.dp)
+                    .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
