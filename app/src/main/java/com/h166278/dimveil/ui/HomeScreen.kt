@@ -224,21 +224,16 @@ private fun BrandHeader(
 
 @Composable
 private fun EclipseMark(modifier: Modifier = Modifier) {
-    val corona = MaterialTheme.colorScheme.primary
     Canvas(modifier) {
-        val center = Offset(size.width * 0.52f, size.height * 0.50f)
-        val radius = size.minDimension * 0.42f
-        // 日冕：只在黑色天体边缘露出一圈克制的冷青光
+        val moonRadius = size.minDimension * 0.38f
+        val moonCenter = Offset(size.width * 0.43f, size.height * 0.50f)
+        // 白色月球在后方；右侧较大的黑色圆体覆盖后，仅留下左侧月牙。
+        drawCircle(color = Color.White, radius = moonRadius, center = moonCenter)
         drawCircle(
-            color = corona.copy(alpha = 0.72f),
-            radius = radius + 1.5.dp.toPx(),
-            center = center,
-            style = Stroke(width = 1.2.dp.toPx())
+            color = Color.Black,
+            radius = moonRadius * 1.07f,
+            center = moonCenter.copy(x = moonCenter.x + moonRadius * 0.59f, y = moonCenter.y - moonRadius * 0.04f)
         )
-        // 被遮住的白色月面，向左露出月牙
-        drawCircle(color = Color.White, radius = radius, center = center.copy(x = center.x - radius * 0.28f))
-        // 黑色天体向左压入，保留白色弯月与右侧日冕
-        drawCircle(color = Color(0xFF080D0F), radius = radius * 0.86f, center = center)
     }
 }
 
