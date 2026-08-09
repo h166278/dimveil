@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -323,7 +324,9 @@ private fun OverlayStateLabel(state: MainUiState) {
                         Icons.Filled.WarningAmber,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier
+                            .size(14.dp)
+                            .offset(y = 2.dp)
                     )
                 }
                 Spacer(Modifier.width(6.dp))
