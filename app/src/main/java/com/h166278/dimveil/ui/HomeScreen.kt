@@ -38,13 +38,11 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -55,7 +53,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -100,7 +97,6 @@ fun HomeScreen(
     onDoubleTapAccessibility: () -> Unit,
     onAutoStartChange: (AutoStartMode) -> Unit
 ) {
-    var showAccessibility by remember { mutableStateOf(false) }
     val active = state.active
     val mode = state.mode
     val depth = state.depth
@@ -142,8 +138,7 @@ fun HomeScreen(
                 mode = state.autoStartMode,
                 onChange = onAutoStartChange,
                 accessibilityEnabled = accessibilityEnabled,
-                onOpenAccessibility = onOpenAccessibility,
-                onShowInfo = { showAccessibility = true }
+                onOpenAccessibility = onOpenAccessibility
             )
             Spacer(Modifier.height(20.dp))
             Text(
@@ -155,28 +150,6 @@ fun HomeScreen(
         }
     }
 
-    if (showAccessibility) {
-        AlertDialog(
-            onDismissRequest = { showAccessibility = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("无障碍权限", color = MaterialTheme.colorScheme.onBackground) },
-            text = {
-                Text(
-                    if (accessibilityEnabled) "无障碍权限已开启\n\n用于在屏幕上显示护眼遮罩，以获得更完整的遮罩范围；不读取屏幕内容、不执行点击、不控制其他应用。"
-                    else "未开启无障碍权限。开启后可获得更完整的遮罩范围。\n\n此权限仅用于在屏幕上显示护眼遮罩，不读取屏幕内容、不执行点击、不控制其他应用。",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { onOpenAccessibility(); showAccessibility = false }) {
-                    Text(if (accessibilityEnabled) "系统设置" else "去开启")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAccessibility = false }) { Text("关闭") }
-            }
-        )
-    }
 }
 
 @Composable
@@ -205,11 +178,12 @@ private fun BrandHeader(
                 Text("DIM VEIL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 3.sp)
             }
         }
-        // 右上角无障碍快捷图标：双击直接经 Shizuku 开/关无障碍授权。
-        // 单击不执行操作，避免与隐藏快捷方式产生误触。
+        // 右上角无障碍快捷入口：双击直接经 Shizuku 开/关无障碍授权。
+        // 已开启时同时展示状态，避免在自动开启卡片中重复提示。
         Box(
             Modifier
-                .size(48.dp)
+                .height(48.dp)
+                .clip(RoundedCornerShape(24.dp))
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { onDoubleTapAccessibility() }
@@ -221,13 +195,26 @@ private fun BrandHeader(
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Filled.AccessibilityNew,
-                contentDescription = "无障碍快捷切换",
-                tint = if (accessibilityEnabled) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-                modifier = Modifier.size(24.dp)
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = if (accessibilityEnabled) 10.dp else 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AccessibilityNew,
+                    contentDescription = "无障碍快捷切换",
+                    tint = if (accessibilityEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    modifier = Modifier.size(24.dp)
+                )
+                if (accessibilityEnabled) {
+                    Spacer(Modifier.width(5.dp))
+                    Text(
+                        "已开启",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
         }
     }
 }
@@ -527,8 +514,7 @@ private fun AutoStartCard(
     mode: AutoStartMode,
     onChange: (AutoStartMode) -> Unit,
     accessibilityEnabled: Boolean,
-    onOpenAccessibility: () -> Unit,
-    onShowInfo: () -> Unit
+    onOpenAccessibility: () -> Unit
 ) {
     Column(
         Modifier
@@ -618,8 +604,8 @@ private fun AutoStartCard(
                 }
             }
         }
-        // 无障碍权限状态行：仅在选中「无障碍」时显示，点击「已开启」查看说明
-        if (mode == AutoStartMode.ACCESSIBILITY) {
+        // 已授权状态已合并到右上角快捷入口；这里只保留未授权时的处理入口。
+        if (mode == AutoStartMode.ACCESSIBILITY && !accessibilityEnabled) {
             Spacer(Modifier.height(10.dp))
             Row(
                 Modifier
@@ -629,38 +615,20 @@ private fun AutoStartCard(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (accessibilityEnabled) {
-                    Icon(
-                        Icons.Filled.Verified,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        "无障碍权限已开启",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable(onClick = onShowInfo)
-                    )
-                } else {
-                    Icon(
-                        Icons.Filled.WarningAmber,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        "无障碍权限未开启",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontSize = 12.sp,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = onOpenAccessibility) { Text("去开启") }
-                }
+                Icon(
+                    Icons.Filled.WarningAmber,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "无障碍权限未开启",
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontSize = 12.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onOpenAccessibility) { Text("去开启") }
             }
         }
     }
