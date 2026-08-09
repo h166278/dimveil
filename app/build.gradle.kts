@@ -18,6 +18,23 @@ android {
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+
+    signingConfigs {
+        create("release") {
+            // 密码与密钥路径全部来自环境变量（本地开发机 / CI Secrets），不落仓库
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "keystore/dimveil-release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD").orEmpty()
+            keyAlias = "dimveil"
+            keyPassword = System.getenv("KEY_PASSWORD").orEmpty()
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
+    }
 }
 
 kotlin {

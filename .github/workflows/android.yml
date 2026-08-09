@@ -9,8 +9,18 @@ jobs:
       - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: '17' }
       - uses: gradle/actions/setup-gradle@v6
-      - name: Unit tests, lint and debug APK
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Decode release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          mkdir -p keystore
+          echo "$KEYSTORE_B64" | base64 -d > keystore/dimveil-release.jks
+      - name: Unit tests, lint and APKs
+        env:
+          KEYSTORE_PATH: keystore/dimveil-release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease --stacktrace
       - name: Policy scan
         run: |
           ! grep -RniE 'android.permission.INTERNET|WRITE_SETTINGS|firebase|analytics|auto.?click|贝利亚|赛罗' app/src README.md || exit 1
@@ -19,4 +29,9 @@ jobs:
         with:
           name: dimveil-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dimveil-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
