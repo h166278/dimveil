@@ -18,7 +18,7 @@ internal val NightModeIcon: ImageVector by lazy {
         viewportHeight = 24f
     ).apply {
         // 只旋转月牙本体，星点保持独立位置不变。
-        group(rotation = 15f, pivotX = 12f, pivotY = 12f) {
+        group(rotate = 15f, pivotX = 12f, pivotY = 12f) {
         path(
             fill = null,
             stroke = SolidColor(androidx.compose.ui.graphics.Color.Black),
