@@ -1,5 +1,6 @@
 package com.h166278.dimveil.data
 
+import com.h166278.dimveil.domain.AutoStartMode
 import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.domain.DimSettings
 import kotlinx.coroutines.flow.Flow
