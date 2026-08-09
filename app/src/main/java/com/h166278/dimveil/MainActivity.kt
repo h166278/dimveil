@@ -151,6 +151,7 @@ class MainActivity : ComponentActivity() {
                 ToggleOutcome.NeedPermission -> {
                     // 授权弹窗不能与普通悬浮窗重叠：先停遮罩，授权结束后恢复
                     stopOverlayForShizuku()
+                    delay(350)
                     ShizukuAccessibility.requestPermission()
                     Toast.makeText(this@MainActivity, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
                 }
@@ -249,7 +250,10 @@ class MainActivity : ComponentActivity() {
             ShizukuAccessibility.isAvailable() -> {
                 pendingAutoAccessibilityGrant = true
                 stopOverlayForShizuku()
-                ShizukuAccessibility.requestPermission()
+                lifecycleScope.launch {
+                    delay(350)
+                    ShizukuAccessibility.requestPermission()
+                }
                 Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
                 // 兜底：弹窗无响应时降级到系统设置页
                 armGrantTimeout()
@@ -322,7 +326,10 @@ class MainActivity : ComponentActivity() {
                 // 已运行但未授权：弹授权申请，同意后回调继续自动开启
                 pendingAutoAccessibilityStart = true
                 stopOverlayForShizuku()
-                ShizukuAccessibility.requestPermission()
+                lifecycleScope.launch {
+                    delay(350)
+                    ShizukuAccessibility.requestPermission()
+                }
                 Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
                 // 兜底：Shizuku 授权弹窗偶发无响应（fork 版/服务状态异常），
                 // 30 秒未收到回调则降级到系统设置页手动开启
