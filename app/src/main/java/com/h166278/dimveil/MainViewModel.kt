@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.h166278.dimveil.data.DataStoreDimPreferences
+import com.h166278.dimveil.domain.AutoStartMode
 import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.domain.DimSettings
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
@@ -80,7 +81,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 saved.depth
             },
             customDepth = saved.customDepth,
-            autoStart = saved.autoStart
+            autoStartMode = saved.autoStartMode
         )
     }
 
@@ -101,7 +102,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             canDraw = permission.canDraw,
             notificationsAllowed = permission.notificationsAllowed,
             normalMaxDepth = OverlayController.normalMaxDepth(app),
-            autoStart = presented.autoStart,
+            autoStartMode = presented.autoStartMode,
             error = overlay.error
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MainUiState())
@@ -130,10 +131,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return true
     }
 
-    /** 开关「进入软件自动开启遮罩」，持久化到 DataStore */
-    fun setAutoStart(enabled: Boolean) {
+    /** 选择「自动开启遮罩」模式，持久化到 DataStore */
+    fun setAutoStartMode(mode: AutoStartMode) {
         viewModelScope.launch {
-            preferences.setAutoStart(enabled)
+            preferences.setAutoStartMode(mode)
         }
     }
 
@@ -143,6 +144,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * 不用 stateIn 的 settings——后者 Eagerly 会先发默认 DimSettings()，无法与真实值区分。
      */
     suspend fun waitForSettings(): DimSettings = preferences.settings.first()
+
+    /** 经 Shizuku 自动开启无障碍授权；返回是否成功 */
+    suspend fun enableAccessibility(): Boolean = ShizukuAccessibility.turnOn()
 
     /**
      * 双击空白处切换无障碍授权（等价系统无障碍快捷方式）：

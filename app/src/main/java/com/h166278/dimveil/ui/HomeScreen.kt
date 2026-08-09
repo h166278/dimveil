@@ -30,8 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
@@ -76,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.h166278.dimveil.BuildConfig
+import com.h166278.dimveil.domain.AutoStartMode
 import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.overlay.OverlayError
 import com.h166278.dimveil.overlay.OverlayHostKind
@@ -95,7 +98,7 @@ fun HomeScreen(
     onDepthCommit: () -> Unit,
     onOpenAccessibility: () -> Unit,
     onDoubleTapAccessibility: () -> Unit,
-    onAutoStartChange: (Boolean) -> Unit
+    onAutoStartChange: (AutoStartMode) -> Unit
 ) {
     var showAccessibility by remember { mutableStateOf(false) }
     val active = state.active
@@ -141,7 +144,7 @@ fun HomeScreen(
             )
             Spacer(Modifier.height(14.dp))
             AutoStartCard(
-                enabled = state.autoStart,
+                mode = state.autoStartMode,
                 onChange = onAutoStartChange
             )
             Spacer(Modifier.height(20.dp))
@@ -556,55 +559,102 @@ private fun StatusCard(
 
 @Composable
 private fun AutoStartCard(
-    enabled: Boolean,
-    onChange: (Boolean) -> Unit
+    mode: AutoStartMode,
+    onChange: (AutoStartMode) -> Unit
 ) {
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(14.dp)
     ) {
-        Box(
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Bolt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    "自动开启遮罩",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    "重新打开暗幕时自动启动所选遮罩",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(
             Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Icon(
-                Icons.Filled.Bolt,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
+            AutoStartMode.entries.forEach { item ->
+                val selected = item == mode
+                val bg by animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    label = "autoStartBg"
+                )
+                val fg by animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = "autoStartFg"
+                )
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(bg)
+                        .semantics {
+                            this.selected = selected
+                            role = Role.RadioButton
+                        }
+                        .clickable { onChange(item) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        autoStartModeIcon(item),
+                        contentDescription = item.label,
+                        tint = fg,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        item.label,
+                        color = fg,
+                        style = if (selected) MaterialTheme.typography.labelLarge
+                        else MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
         }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                "进入自动开启遮罩",
-                color = MaterialTheme.colorScheme.onBackground,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                "打开暗幕时自动启动遮罩",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-        Spacer(Modifier.width(8.dp))
-        Switch(
-            checked = enabled,
-            onCheckedChange = onChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        )
     }
+}
+
+private fun autoStartModeIcon(mode: AutoStartMode): ImageVector = when (mode) {
+    AutoStartMode.OFF -> Icons.Filled.Block
+    AutoStartMode.NORMAL -> Icons.Filled.Layers
+    AutoStartMode.ACCESSIBILITY -> Icons.Filled.AccessibilityNew
 }

@@ -16,7 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.h166278.dimveil.MainViewModel.ToggleOutcome
+import com.h166278.dimveil.domain.AutoStartMode
+import com.h166278.dimveil.domain.DimSettings
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
+import com.h166278.dimveil.overlay.OverlayHostKind
 import com.h166278.dimveil.overlay.OverlayPermissionAutoReturn
 import com.h166278.dimveil.overlay.OverlayRuntime
 import com.h166278.dimveil.overlay.ShizukuAccessibility
@@ -24,12 +27,16 @@ import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
 import rikka.shizuku.Shizuku
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class MainActivity : ComponentActivity() {
     private val viewModel by viewModels<MainViewModel>()
     private var pendingStartAfterGrant = false
     private var notificationDeniedPermanently = false
+    /** 自动开启无障碍遮罩时，Shizuku 授权弹窗同意后续跑自动开启流程 */
+    private var pendingAutoAccessibilityStart = false
 
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -41,13 +48,23 @@ class MainActivity : ComponentActivity() {
         viewModel.refreshPermissions()
     }
 
-    // Shizuku 授权结果：同意后自动完成这次双击想做的切换，无需再双击一次
+    // Shizuku 授权结果：同意后自动完成这次想做的切换，无需再操作一次
     private val shizukuPermissionListener =
         Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
             if (requestCode == ShizukuAccessibility.REQUEST_CODE) {
                 if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                    performAccessibilityToggle()
+                    if (pendingAutoAccessibilityStart) {
+                        // 自动开启无障碍遮罩流程：开权限 → 等服务连接 → 启动遮罩
+                        pendingAutoAccessibilityStart = false
+                        lifecycleScope.launch {
+                            val saved = viewModel.waitForSettings()
+                            autoStartAccessibility(saved)
+                        }
+                    } else {
+                        performAccessibilityToggle()
+                    }
                 } else {
+                    pendingAutoAccessibilityStart = false
                     Toast.makeText(this, R.string.shizuku_permission_denied, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -86,7 +103,7 @@ class MainActivity : ComponentActivity() {
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     },
                     onDoubleTapAccessibility = { performAccessibilityToggle() },
-                    onAutoStartChange = viewModel::setAutoStart
+                    onAutoStartChange = viewModel::setAutoStartMode
                 )
             }
         }
@@ -136,24 +153,82 @@ class MainActivity : ComponentActivity() {
                 OverlayService.start(this, s.depth, s.mode)
             }
         } else {
-            // 「进入自动开启遮罩」：每次回到前台评估一次。
+            // 「自动开启遮罩」：每次回到前台评估一次。
             // - 遮罩运行中（active=true）→ 不重复启动；
             // - 主页主开关手动关闭过 → 本次进程不再自动开启；
             // - 划掉任务重开 / 通知栏按钮关闭后回前台 → 自动开启。
             // 直接等 DataStore 真实设置（waitForSettings）：uiState 的 settings 是
-            // stateIn(Eagerly)，会先发射默认 autoStart=false，冷启动时 first(loaded)
-            // 会命中假值导致漏触发；DataStore 原始 flow 首次发射即磁盘真实值。
+            // stateIn(Eagerly)，会先发射默认值，冷启动时会命中假值导致漏触发；
+            // DataStore 原始 flow 首次发射即磁盘真实值。
             lifecycleScope.launch {
                 val saved = viewModel.waitForSettings()
-                if (saved.autoStart && !OverlayService.autoStartSuppressed &&
-                    !OverlayRuntime.state.value.active &&
-                    (OverlayService.canDraw(this@MainActivity) || viewModel.uiState.value.accessibilityReady)
-                ) {
-                    OverlayService.start(this@MainActivity, saved.depth, saved.mode)
+                if (OverlayService.autoStartSuppressed || OverlayRuntime.state.value.active) return@launch
+                when (saved.autoStartMode) {
+                    AutoStartMode.OFF -> Unit
+                    AutoStartMode.NORMAL -> {
+                        if (OverlayService.canDraw(this@MainActivity)) {
+                            OverlayService.start(
+                                this@MainActivity, saved.depth, saved.mode, OverlayHostKind.NORMAL
+                            )
+                        }
+                    }
+                    AutoStartMode.ACCESSIBILITY -> autoStartAccessibility(saved)
                 }
             }
         }
     }
+
+    /**
+     * 自动开启无障碍遮罩：先确保无障碍权限与服务连接，再以无障碍遮罩启动。
+     * - 服务已连接：直接启动；
+     * - 权限已开但服务未连接（如系统重启后）：等待绑定；
+     * - 权限未开：经 Shizuku 自动开启（未授权则弹授权申请，同意后回调续跑）；
+     * - 无 Shizuku：跳系统设置页由用户手动开启，返回后 onResume 会再次评估。
+     */
+    private suspend fun autoStartAccessibility(saved: DimSettings) {
+        val st = viewModel.uiState.value
+        when {
+            st.accessibilityReady -> {
+                OverlayService.start(this, saved.depth, saved.mode, OverlayHostKind.ACCESSIBILITY)
+            }
+            st.accessibilityEnabled -> {
+                if (waitForAccessibilityReady()) {
+                    OverlayService.start(this, saved.depth, saved.mode, OverlayHostKind.ACCESSIBILITY)
+                } else {
+                    Toast.makeText(this, R.string.auto_accessibility_connect_timeout, Toast.LENGTH_SHORT).show()
+                }
+            }
+            ShizukuAccessibility.isAvailable() && ShizukuAccessibility.isGranted() -> {
+                if (!viewModel.enableAccessibility()) {
+                    Toast.makeText(this, R.string.accessibility_toggle_failed, Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (waitForAccessibilityReady()) {
+                    OverlayService.start(this, saved.depth, saved.mode, OverlayHostKind.ACCESSIBILITY)
+                } else {
+                    Toast.makeText(this, R.string.auto_accessibility_connect_timeout, Toast.LENGTH_SHORT).show()
+                }
+            }
+            ShizukuAccessibility.isAvailable() -> {
+                // 已运行但未授权：弹授权申请，同意后回调继续自动开启
+                pendingAutoAccessibilityStart = true
+                ShizukuAccessibility.requestPermission()
+                Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
+            }
+            else -> {
+                // 无 Shizuku：跳系统设置页手动开启，返回后 onResume 再次评估
+                Toast.makeText(this, R.string.auto_accessibility_need_manual, Toast.LENGTH_SHORT).show()
+                AccessibilityOverlayHost.armAutoReturn(this)
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }
+        }
+    }
+
+    /** 等待无障碍服务连接（最多 15 秒），连接后返回 true */
+    private suspend fun waitForAccessibilityReady(): Boolean = withTimeoutOrNull(15_000) {
+        AccessibilityOverlayHost.availability.first { it }
+        true
+    } ?: false
 
     private fun openOverlayPermission() {
         OverlayPermissionAutoReturn.arm(this)

@@ -1,5 +1,6 @@
 package com.h166278.dimveil.ui
 
+import com.h166278.dimveil.domain.AutoStartMode
 import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.overlay.OverlayError
 import com.h166278.dimveil.overlay.OverlayHostKind
@@ -15,7 +16,7 @@ data class MainUiState(
     val canDraw: Boolean = false,
     val notificationsAllowed: Boolean = true,
     val normalMaxDepth: Int = 80,
-    val autoStart: Boolean = false,
+    val autoStartMode: AutoStartMode = AutoStartMode.OFF,
     val error: OverlayError? = null
 ) {
     val canStart: Boolean get() = accessibilityReady || canDraw

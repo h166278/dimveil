@@ -11,4 +11,6 @@
     <string name="shizuku_request_permission">请在弹窗中允许暗幕使用 Shizuku</string>
     <string name="shizuku_permission_denied">未授权 Shizuku，无法切换无障碍权限</string>
     <string name="accessibility_toggle_failed">切换失败，请检查 Shizuku 授权</string>
+    <string name="auto_accessibility_connect_timeout">无障碍服务连接超时，请在系统设置中检查</string>
+    <string name="auto_accessibility_need_manual">未检测到 Shizuku，请在系统设置中开启无障碍权限</string>
 </resources>

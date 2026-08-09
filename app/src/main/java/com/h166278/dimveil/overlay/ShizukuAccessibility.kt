@@ -42,6 +42,20 @@ object ShizukuAccessibility {
         !enabled
     }
 
+    /**
+     * 开启无障碍授权（仅 [isAvailable] && [isGranted] 成立时调用）。
+     * 返回是否成功。
+     */
+    suspend fun turnOn(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val list = readEnabledServices()
+            enable(list)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private fun enable(list: List<String>) {
         val next = if (list.isEmpty()) SERVICE_COMPONENT else (list + SERVICE_COMPONENT).joinToString(":")
         exec("settings", "put", "secure", "enabled_accessibility_services", next)

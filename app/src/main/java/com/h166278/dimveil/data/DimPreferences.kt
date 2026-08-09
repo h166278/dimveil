@@ -8,5 +8,5 @@ interface DimPreferences {
     val settings: Flow<DimSettings>
     suspend fun selectMode(mode: DimMode)
     suspend fun setDepth(depth: Int)
-    suspend fun setAutoStart(enabled: Boolean)
+    suspend fun setAutoStartMode(mode: AutoStartMode)
 }

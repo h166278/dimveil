@@ -28,6 +28,8 @@ class OverlayService : Service() {
     private var requestedDepth = 0
     private var mode = DimMode.NIGHT
     private var foregroundStarted = false
+    /** 自动启动指定的遮罩类型；null = 按 OverlayPolicy 自动选择（手动开关等默认路径） */
+    private var preferredHost: OverlayHostKind? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -38,7 +40,18 @@ class OverlayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START, ACTION_UPDATE -> {
+            ACTION_START -> {
+                requestedDepth = intent.getIntExtra(EXTRA_DEPTH, 0).coerceIn(0, 90)
+                mode = intent.getStringExtra(EXTRA_MODE)
+                    ?.let { name -> DimMode.entries.firstOrNull { it.name == name } }
+                    ?: DimMode.NIGHT
+                // 自动启动可指定遮罩类型；手动开关启动不带该 extra（null = 自动选择）
+                preferredHost = intent.getStringExtra(EXTRA_HOST)
+                    ?.let { name -> OverlayHostKind.entries.firstOrNull { it.name == name } }
+                if (!ensureForeground()) return START_STICKY
+                applyBestHost()
+            }
+            ACTION_UPDATE -> {
                 requestedDepth = intent.getIntExtra(EXTRA_DEPTH, 0).coerceIn(0, 90)
                 mode = intent.getStringExtra(EXTRA_MODE)
                     ?.let { name -> DimMode.entries.firstOrNull { it.name == name } }
@@ -90,7 +103,13 @@ class OverlayService : Service() {
     )
 
     private fun applyBestHost() {
-        val targetHost = OverlayPolicy.selectHost(
+        // 指定类型仅在对应能力可用时生效，否则回退自动选择
+        val targetHost = preferredHost?.let { host ->
+            when (host) {
+                OverlayHostKind.NORMAL -> if (canDraw(this)) host else null
+                OverlayHostKind.ACCESSIBILITY -> if (AccessibilityOverlayHost.available) host else null
+            }
+        } ?: OverlayPolicy.selectHost(
             accessibilityReady = AccessibilityOverlayHost.available,
             canDraw = canDraw(this)
         ) ?: run {
@@ -159,6 +178,7 @@ class OverlayService : Service() {
         private const val EXTRA_DEPTH = "depth"
         private const val EXTRA_MODE = "mode"
         private const val EXTRA_MANUAL_STOP = "manual_stop"
+        private const val EXTRA_HOST = "host"
 
         /**
          * 本次进程内用户通过主页主开关手动关闭过遮罩。
@@ -170,8 +190,14 @@ class OverlayService : Service() {
 
         fun canDraw(context: Context): Boolean = Settings.canDrawOverlays(context)
 
-        fun startIntent(context: Context, depth: Int, mode: DimMode) =
-            commandIntent(context, ACTION_START, depth, mode)
+        fun startIntent(
+            context: Context,
+            depth: Int,
+            mode: DimMode,
+            host: OverlayHostKind? = null
+        ) = commandIntent(context, ACTION_START, depth, mode).apply {
+            if (host != null) putExtra(EXTRA_HOST, host.name)
+        }
 
         fun updateIntent(context: Context, depth: Int, mode: DimMode) =
             commandIntent(context, ACTION_UPDATE, depth, mode)
@@ -181,8 +207,9 @@ class OverlayService : Service() {
                 .setAction(ACTION_STOP)
                 .putExtra(EXTRA_MANUAL_STOP, manual)
 
-        fun start(context: Context, depth: Int, mode: DimMode) {
-            ContextCompat.startForegroundService(context, startIntent(context, depth, mode))
+        /** 启动遮罩服务；[host] 非空时强制使用指定遮罩类型（自动开启用），null = 自动选择 */
+        fun start(context: Context, depth: Int, mode: DimMode, host: OverlayHostKind? = null) {
+            ContextCompat.startForegroundService(context, startIntent(context, depth, mode, host))
         }
 
         fun update(context: Context, depth: Int, mode: DimMode) {
