@@ -118,26 +118,26 @@ fun HomeScreen(
                 accessibilityEnabled = accessibilityEnabled,
                 onDoubleTapAccessibility = onDoubleTapAccessibility
             )
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(14.dp))
             GuardTitle(active = active, blocked = !state.canStart)
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             CoreSwitch(active = active, enabled = state.canStart || active, onClick = onToggle)
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             OverlayStateLabel(state = state)
-            Spacer(Modifier.height(20.dp))
-            ModeRow(mode = mode, onMode = onMode)
             Spacer(Modifier.height(14.dp))
+            ModeRow(mode = mode, onMode = onMode)
+            Spacer(Modifier.height(10.dp))
             DepthCard(
                 depth = depth,
                 onDepthPreview = onDepthPreview,
                 onDepthCommit = onDepthCommit
             )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             AutoStartCard(
                 mode = state.autoStartMode,
                 onChange = onAutoStartChange
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
             Text(
                 "暗幕 v${BuildConfig.VERSION_NAME} · 离线无追踪",
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
@@ -336,7 +336,7 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
 
     Box(
         Modifier
-            .size(172.dp)
+            .size(148.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(CircleShape)
             .semantics {
@@ -352,12 +352,12 @@ private fun CoreSwitch(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
     ) {
         // 外层辉光
         Box(
-            Modifier.size(172.dp).background(
+            Modifier.size(148.dp).background(
                 Brush.radialGradient(listOf(ringColor.copy(alpha = 0.30f * glowAlpha), Color.Transparent)),
                 CircleShape
             )
         )
-        Canvas(Modifier.size(150.dp)) {
+        Canvas(Modifier.size(130.dp)) {
             val center = Offset(size.width / 2f, size.height / 2f)
             val radius = size.minDimension * 0.44f
             // 盘面渐变
@@ -393,10 +393,10 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .height(60.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
@@ -429,9 +429,9 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
                     modeIcon(item, selected),
                     contentDescription = item.label,
                     tint = fg,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(1.dp))
                 Text(
                     item.label,
                     color = fg,
@@ -464,7 +464,7 @@ private fun DepthCard(
             .clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
-            .padding(horizontal = 18.dp, vertical = 16.dp)
+            .padding(horizontal = 18.dp, vertical = 12.dp)
     ) {
         Row(
             Modifier.fillMaxWidth(),
@@ -477,7 +477,7 @@ private fun DepthCard(
                 Text("调节暗幕浓度 0–90%", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
             Row(verticalAlignment = Alignment.Bottom) {
-                Text("$animatedDepth", color = MaterialTheme.colorScheme.primary, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                Text("$animatedDepth", color = MaterialTheme.colorScheme.primary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
                 Text(
                     "%",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -516,12 +516,12 @@ private fun AutoStartCard(
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-            .padding(14.dp)
+            .padding(10.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
-                    .size(38.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
@@ -547,7 +547,7 @@ private fun AutoStartCard(
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         Row(
             Modifier
                 .fillMaxWidth()
