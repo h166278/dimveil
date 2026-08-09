@@ -47,7 +47,11 @@ class OverlayService : Service() {
                 applyBestHost()
             }
             ACTION_HOST_CHANGED -> if (OverlayRuntime.state.value.active) applyBestHost()
-            ACTION_STOP -> stopOverlay()
+            // 主开关与通知栏按钮的统一关闭入口：本次进程内不再自动开启遮罩
+            ACTION_STOP -> {
+                autoStartSuppressed = true
+                stopOverlay()
+            }
             // 进程被系统回收后重建：从持久化设置恢复遮罩
             null -> restoreAndResume()
         }
@@ -153,6 +157,13 @@ class OverlayService : Service() {
         private const val ACTION_HOST_CHANGED = "com.h166278.dimveil.HOST_CHANGED"
         private const val EXTRA_DEPTH = "depth"
         private const val EXTRA_MODE = "mode"
+
+        /**
+         * 本次进程内用户手动关闭过遮罩（主开关或通知栏按钮）。
+         * 「进入自动开启遮罩」在本次运行期间不再生效，仅重新启动 app（新进程）后恢复。
+         */
+        @Volatile
+        var autoStartSuppressed = false
 
         fun canDraw(context: Context): Boolean = Settings.canDrawOverlays(context)
 
