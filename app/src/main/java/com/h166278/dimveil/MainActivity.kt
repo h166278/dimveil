@@ -27,6 +27,7 @@ import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
 import rikka.shizuku.Shizuku
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -208,6 +209,8 @@ class MainActivity : ComponentActivity() {
                 pendingAutoAccessibilityGrant = true
                 ShizukuAccessibility.requestPermission()
                 Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
+                // 兜底：弹窗无响应时降级到系统设置页
+                armGrantTimeout()
             }
             else -> {
                 Toast.makeText(this, R.string.shizuku_unavailable, Toast.LENGTH_SHORT).show()
@@ -221,6 +224,23 @@ class MainActivity : ComponentActivity() {
             Toast.makeText(this, R.string.auto_accessibility_enabled, Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, R.string.accessibility_toggle_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Shizuku 授权弹窗兜底：30 秒内未收到授权回调（弹窗无响应/服务异常）时，
+     * 降级到系统设置页手动开启无障碍权限，避免流程卡死。
+     */
+    private fun armGrantTimeout() {
+        lifecycleScope.launch {
+            delay(30_000)
+            val stillPending = pendingAutoAccessibilityStart || pendingAutoAccessibilityGrant
+            if (!stillPending) return@launch
+            pendingAutoAccessibilityStart = false
+            pendingAutoAccessibilityGrant = false
+            Toast.makeText(this@MainActivity, R.string.auto_accessibility_grant_timeout, Toast.LENGTH_SHORT).show()
+            AccessibilityOverlayHost.armAutoReturn(this@MainActivity)
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
     }
 
@@ -260,6 +280,9 @@ class MainActivity : ComponentActivity() {
                 pendingAutoAccessibilityStart = true
                 ShizukuAccessibility.requestPermission()
                 Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
+                // 兜底：Shizuku 授权弹窗偶发无响应（fork 版/服务状态异常），
+                // 30 秒未收到回调则降级到系统设置页手动开启
+                armGrantTimeout()
             }
             else -> {
                 // 无 Shizuku：跳系统设置页手动开启，返回后 onResume 再次评估

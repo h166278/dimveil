@@ -14,4 +14,5 @@
     <string name="auto_accessibility_connect_timeout">无障碍服务连接超时，请在系统设置中检查</string>
     <string name="auto_accessibility_need_manual">未检测到 Shizuku，请在系统设置中开启无障碍权限</string>
     <string name="auto_accessibility_enabled">已开启无障碍权限，重新打开暗幕时自动开启无障碍遮罩</string>
+    <string name="auto_accessibility_grant_timeout">Shizuku 授权未响应，已跳转系统设置，请手动开启无障碍权限</string>
 </resources>
