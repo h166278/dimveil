@@ -507,35 +507,35 @@ private fun DepthCard(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(onClick = { onDepthPreview((depth - 1).coerceAtLeast(0)); onDepthCommit() }) {
+            TextButton(
+                modifier = Modifier.size(36.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    onDepthPreview((depth - 1).coerceAtLeast(0))
+                    onDepthCommit()
+                }
+            ) {
                 Text("−", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Slider(
                 modifier = Modifier.weight(1f),
                 value = depth.toFloat(),
-                onValueChange = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                    onDepthPreview(it.toInt())
-                },
+                onValueChange = { onDepthPreview(it.toInt()) },
                 onValueChangeFinished = onDepthCommit,
                 valueRange = 0f..90f,
                 colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
             )
-            TextButton(onClick = { onDepthPreview((depth + 1).coerceAtMost(90)); onDepthCommit() }) {
+            TextButton(
+                modifier = Modifier.size(36.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                onClick = {
+                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                    onDepthPreview((depth + 1).coerceAtMost(90))
+                    onDepthCommit()
+                }
+            ) {
                 Text("+", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        // 深度卡片只显示一条与深度直接相关的提示：实际安全裁剪优先于高深度提醒。
-        val depthWarning = when {
-            state.depthLimited -> "悬浮窗模式最高支持 ${state.appliedDepth}%，已按系统安全限制调整"
-            state.committedDepth >= 80 -> "深度较高，请确认仍能看清屏幕"
-            else -> null
-        }
-        if (depthWarning != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(depthWarning, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
             }
         }
     }
