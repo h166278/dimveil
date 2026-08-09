@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.h166278.dimveil.MainViewModel.ToggleOutcome
 import com.h166278.dimveil.domain.AutoStartMode
 import com.h166278.dimveil.domain.DimSettings
+import com.h166278.dimveil.domain.DimMode
 import com.h166278.dimveil.overlay.AccessibilityOverlayHost
 import com.h166278.dimveil.overlay.OverlayHostKind
 import com.h166278.dimveil.overlay.OverlayPermissionAutoReturn
@@ -40,6 +41,8 @@ class MainActivity : ComponentActivity() {
     private var pendingAutoAccessibilityStart = false
     /** 选择「自动无障碍」时，Shizuku 授权弹窗同意后自动开启无障碍权限 */
     private var pendingAutoAccessibilityGrant = false
+    /** Shizuku 授权期间暂存的遮罩；授权流程结束后按条件恢复 */
+    private var overlayRestore: OverlayRestore? = null
     /** 首次开启遮罩时展示磁贴引导弹窗 */
     private var showTileGuide by mutableStateOf(false)
 
@@ -52,6 +55,8 @@ class MainActivity : ComponentActivity() {
                         // 自动开启无障碍遮罩流程：开权限 → 等服务连接 → 启动遮罩
                         pendingAutoAccessibilityStart -> {
                             pendingAutoAccessibilityStart = false
+                            // 授权成功后由无障碍流程接管，不恢复旧的普通遮罩
+                            overlayRestore = null
                             lifecycleScope.launch {
                                 val saved = viewModel.waitForSettings()
                                 autoStartAccessibility(saved)
@@ -60,13 +65,17 @@ class MainActivity : ComponentActivity() {
                         // 选择「自动无障碍」：开权限，遮罩等下次进入自动启动
                         pendingAutoAccessibilityGrant -> {
                             pendingAutoAccessibilityGrant = false
-                            lifecycleScope.launch { grantAccessibilityAndNotify() }
+                            lifecycleScope.launch {
+                                grantAccessibilityAndNotify()
+                                restoreOverlayAfterShizuku()
+                            }
                         }
                         else -> performAccessibilityToggle()
                     }
                 } else {
                     pendingAutoAccessibilityStart = false
                     pendingAutoAccessibilityGrant = false
+                    restoreOverlayAfterShizuku()
                     Toast.makeText(this, R.string.shizuku_permission_denied, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -131,13 +140,17 @@ class MainActivity : ComponentActivity() {
     private fun performAccessibilityToggle() {
         lifecycleScope.launch {
             when (val outcome = viewModel.toggleAccessibility()) {
-                is ToggleOutcome.Toggled -> Toast.makeText(
-                    this@MainActivity,
-                    if (outcome.nowEnabled) R.string.accessibility_turned_on else R.string.accessibility_turned_off,
-                    Toast.LENGTH_SHORT
-                ).show()
+                is ToggleOutcome.Toggled -> {
+                    restoreOverlayAfterShizuku()
+                    Toast.makeText(
+                        this@MainActivity,
+                        if (outcome.nowEnabled) R.string.accessibility_turned_on else R.string.accessibility_turned_off,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
                 ToggleOutcome.NeedPermission -> {
-                    // 首次使用：弹 Shizuku 授权申请，同意后自动完成切换
+                    // 授权弹窗不能与普通悬浮窗重叠：先停遮罩，授权结束后恢复
+                    stopOverlayForShizuku()
                     ShizukuAccessibility.requestPermission()
                     Toast.makeText(this@MainActivity, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
                 }
@@ -191,6 +204,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private data class OverlayRestore(
+        val depth: Int,
+        val mode: DimMode,
+        val host: OverlayHostKind?
+    )
+
+    /** Shizuku 系统授权期间停止所有遮罩，避免授权弹窗被覆盖。 */
+    private fun stopOverlayForShizuku() {
+        if (overlayRestore != null || !OverlayRuntime.state.value.active) return
+        val state = OverlayRuntime.state.value
+        overlayRestore = OverlayRestore(state.requestedDepth, state.mode, state.host)
+        OverlayService.stop(this)
+    }
+
+    /** 仅在授权流程结束后恢复授权前正在运行的遮罩，并尊重当前设置。 */
+    private fun restoreOverlayAfterShizuku() {
+        val restore = overlayRestore ?: return
+        overlayRestore = null
+        if (viewModel.uiState.value.autoStartMode == AutoStartMode.OFF) return
+        if (OverlayRuntime.state.value.active) return
+        val host = when (restore.host) {
+            OverlayHostKind.NORMAL -> if (OverlayService.canDraw(this)) restore.host else null
+            OverlayHostKind.ACCESSIBILITY -> if (AccessibilityOverlayHost.available) restore.host else null
+            null -> null
+        }
+        OverlayService.start(this, restore.depth, restore.mode, host)
+    }
+
     /**
      * 用户选择「自动无障碍」时立即准备：确保 Shizuku 已授权并开启无障碍权限，
      * 这样下次重新打开暗幕时即可直接自动启动无障碍遮罩。
@@ -207,6 +248,7 @@ class MainActivity : ComponentActivity() {
             }
             ShizukuAccessibility.isAvailable() -> {
                 pendingAutoAccessibilityGrant = true
+                stopOverlayForShizuku()
                 ShizukuAccessibility.requestPermission()
                 Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
                 // 兜底：弹窗无响应时降级到系统设置页
@@ -238,6 +280,7 @@ class MainActivity : ComponentActivity() {
             if (!stillPending) return@launch
             pendingAutoAccessibilityStart = false
             pendingAutoAccessibilityGrant = false
+            restoreOverlayAfterShizuku()
             Toast.makeText(this@MainActivity, R.string.auto_accessibility_grant_timeout, Toast.LENGTH_SHORT).show()
             AccessibilityOverlayHost.armAutoReturn(this@MainActivity)
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -278,6 +321,7 @@ class MainActivity : ComponentActivity() {
             ShizukuAccessibility.isAvailable() -> {
                 // 已运行但未授权：弹授权申请，同意后回调继续自动开启
                 pendingAutoAccessibilityStart = true
+                stopOverlayForShizuku()
                 ShizukuAccessibility.requestPermission()
                 Toast.makeText(this, R.string.shizuku_request_permission, Toast.LENGTH_SHORT).show()
                 // 兜底：Shizuku 授权弹窗偶发无响应（fork 版/服务状态异常），
