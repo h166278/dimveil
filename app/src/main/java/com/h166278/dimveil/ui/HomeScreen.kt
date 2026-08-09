@@ -538,6 +538,21 @@ private fun DepthCard(
                 Text("+", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        val depthWarning = when {
+            // 仅在悬浮窗松手并实际回落到 80% 后显示。
+            state.depthWasClamped -> "悬浮窗模式最高支持 80%，已按系统安全限制调整"
+            // 无障碍遮罩允许超过 80%，松手提交后显示高深度提醒。
+            state.active && state.host == OverlayHostKind.ACCESSIBILITY && state.committedDepth > 80 ->
+                "深度较高，请确认仍能看清屏幕"
+            else -> null
+        }
+        if (depthWarning != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.WarningAmber, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(depthWarning, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
+            }
+        }
     }
 }
 
