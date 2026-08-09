@@ -173,7 +173,7 @@ private fun BrandHeader(
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("暗幕", color = MaterialTheme.colorScheme.onBackground, fontSize = 25.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
-                Text("DIM VEIL", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 3.sp)
+                Text("开源软件", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
         }
         // 右上角无障碍快捷入口：双击直接经 Shizuku 开/关无障碍授权。
