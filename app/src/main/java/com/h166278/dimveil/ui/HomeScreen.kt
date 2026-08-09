@@ -226,13 +226,26 @@ private fun BrandHeader(
 private fun EclipseMark(modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val moonRadius = size.minDimension * 0.38f
-        val moonCenter = Offset(size.width * 0.43f, size.height * 0.50f)
-        // 白色月球在后方；右侧较大的黑色圆体覆盖后，仅留下左侧月牙。
+        val moonCenter = Offset(size.width * 0.35f, size.height * 0.50f)
+        // 白色粗月牙是主体；右侧两层深色弧片表现“暗幕”合拢。
         drawCircle(color = Color.White, radius = moonRadius, center = moonCenter)
-        drawCircle(
-            color = Color.Black,
-            radius = moonRadius * 1.07f,
-            center = moonCenter.copy(x = moonCenter.x + moonRadius * 0.59f, y = moonCenter.y - moonRadius * 0.04f)
+        drawArc(
+            color = Color(0xFF182523),
+            startAngle = -67f,
+            sweepAngle = 134f,
+            useCenter = false,
+            topLeft = Offset(moonCenter.x + moonRadius * 0.42f, moonCenter.y - moonRadius * 1.04f),
+            size = androidx.compose.ui.geometry.Size(moonRadius * 1.45f, moonRadius * 2.08f),
+            style = Stroke(width = moonRadius * 0.38f)
+        )
+        drawArc(
+            color = Color(0xFF0E1717),
+            startAngle = -64f,
+            sweepAngle = 128f,
+            useCenter = false,
+            topLeft = Offset(moonCenter.x + moonRadius * 0.98f, moonCenter.y - moonRadius * 0.86f),
+            size = androidx.compose.ui.geometry.Size(moonRadius * 1.10f, moonRadius * 1.72f),
+            style = Stroke(width = moonRadius * 0.28f)
         )
     }
 }
