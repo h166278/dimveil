@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
@@ -16,6 +17,8 @@ internal val NightModeIcon: ImageVector by lazy {
         viewportWidth = 24f,
         viewportHeight = 24f
     ).apply {
+        // 只旋转月牙本体，星点保持独立位置不变。
+        group(rotation = 15f, pivotX = 12f, pivotY = 12f) {
         path(
             fill = null,
             stroke = SolidColor(androidx.compose.ui.graphics.Color.Black),
@@ -31,8 +34,10 @@ internal val NightModeIcon: ImageVector by lazy {
             curveTo(17.6f, 11.9f, 19.1f, 11.9f, 20.3f, 11.4f)
             curveTo(20.8f, 12.5f, 20.8f, 13.7f, 20.3f, 14.8f)
         }
+        }
         path(fill = SolidColor(androidx.compose.ui.graphics.Color.Black), pathFillType = PathFillType.NonZero) {
-            // 星点顺时针下移约 15°，与月牙开口方向更协调。
+            // 星点保持原位。
+
             moveTo(18.4f, 5.0f)
             curveTo(18.8f, 6.0f, 19.4f, 6.6f, 20.4f, 7.0f)
             curveTo(19.4f, 7.4f, 18.8f, 8.0f, 18.4f, 9.0f)
