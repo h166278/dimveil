@@ -33,17 +33,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Bolt
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WarningAmber
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
@@ -471,9 +467,8 @@ private fun ModeRow(mode: DimMode, onMode: (DimMode) -> Unit) {
 }
 
 private fun modeIcon(mode: DimMode, selected: Boolean): ImageVector = when (mode) {
-    // 夜间保持同一方向：未选中空心月牙，选中实心月牙。
-    DimMode.NIGHT -> if (selected) Icons.Filled.DarkMode else Icons.Outlined.DarkMode
-    DimMode.READING -> if (selected) Icons.Filled.MenuBook else Icons.Outlined.MenuBook
+    DimMode.NIGHT -> NightModeIcon
+    DimMode.READING -> ReadingModeIcon
     DimMode.GAME -> if (selected) Icons.Filled.SportsEsports else Icons.Outlined.SportsEsports
     DimMode.CUSTOM -> if (selected) Icons.Filled.Tune else Icons.Outlined.Tune
 }
