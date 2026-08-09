@@ -136,20 +136,22 @@ class MainActivity : ComponentActivity() {
                 val s = viewModel.uiState.value
                 OverlayService.start(this, s.depth, s.mode)
             }
-        }
-        // 「进入自动开启遮罩」：仅在本次进程（冷启动）评估一次，回到前台不重复触发；
-        // 本次运行期间用户手动关过遮罩则不再自动开启，重新启动 app 后恢复。
-        // uiState 首个值由 DataStore 异步读取，必须等流发射后再判断，
-        // 否则冷启动时读到默认值会漏触发；canDraw 直接同步查系统权限保证实时。
-        lifecycleScope.launch {
-            val s = viewModel.uiState.first()
-            if (s.autoStart && !autoStartEvaluated && !OverlayService.autoStartSuppressed &&
-                !OverlayRuntime.state.value.active &&
-                (OverlayService.canDraw(this@MainActivity) || s.accessibilityReady)
-            ) {
-                OverlayService.start(this@MainActivity, s.depth, s.mode)
+        } else {
+            // 「进入自动开启遮罩」：每次回到前台评估一次。
+            // - 遮罩运行中（active=true）→ 不重复启动；
+            // - 主页主开关手动关闭过 → 本次进程不再自动开启；
+            // - 划掉任务重开 / 通知栏按钮关闭后回前台 → 自动开启。
+            // uiState 首个值由 DataStore 异步读取，必须等流发射后再判断，
+            // 否则冷启动时读到默认值会漏触发；canDraw 直接同步查系统权限保证实时。
+            lifecycleScope.launch {
+                val s = viewModel.uiState.first()
+                if (s.autoStart && !OverlayService.autoStartSuppressed &&
+                    !OverlayRuntime.state.value.active &&
+                    (OverlayService.canDraw(this@MainActivity) || s.accessibilityReady)
+                ) {
+                    OverlayService.start(this@MainActivity, s.depth, s.mode)
+                }
             }
-            autoStartEvaluated = true
         }
     }
 
@@ -174,9 +176,5 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val KEY_PENDING_START = "pending_start_after_grant"
-
-        /** 本次进程内是否已评估过「进入自动开启遮罩」：冷启动后只评估一次，回到前台不重复 */
-        @Volatile
-        private var autoStartEvaluated = false
     }
 }

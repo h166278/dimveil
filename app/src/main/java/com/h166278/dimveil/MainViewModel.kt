@@ -120,7 +120,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleOverlay(): Boolean {
         val state = uiState.value
         if (state.active) {
-            OverlayService.stop(app)
+            // 主页主开关关闭：标记为手动关闭，本次进程内不再自动开启遮罩
+            OverlayService.stop(app, manual = true)
             return true
         }
         if (!state.canStart) return false

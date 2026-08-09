@@ -47,9 +47,10 @@ class OverlayService : Service() {
                 applyBestHost()
             }
             ACTION_HOST_CHANGED -> if (OverlayRuntime.state.value.active) applyBestHost()
-            // 主开关与通知栏按钮的统一关闭入口：本次进程内不再自动开启遮罩
+            // 关闭遮罩：仅主页主开关关闭（manual=true）抑制本次进程的自动开启；
+            // 通知栏按钮关闭、划掉任务等被动停止不抑制，回到前台仍会自动开启
             ACTION_STOP -> {
-                autoStartSuppressed = true
+                if (intent.getBooleanExtra(EXTRA_MANUAL_STOP, false)) autoStartSuppressed = true
                 stopOverlay()
             }
             // 进程被系统回收后重建：从持久化设置恢复遮罩
@@ -157,10 +158,12 @@ class OverlayService : Service() {
         private const val ACTION_HOST_CHANGED = "com.h166278.dimveil.HOST_CHANGED"
         private const val EXTRA_DEPTH = "depth"
         private const val EXTRA_MODE = "mode"
+        private const val EXTRA_MANUAL_STOP = "manual_stop"
 
         /**
-         * 本次进程内用户手动关闭过遮罩（主开关或通知栏按钮）。
+         * 本次进程内用户通过主页主开关手动关闭过遮罩。
          * 「进入自动开启遮罩」在本次运行期间不再生效，仅重新启动 app（新进程）后恢复。
+         * 通知栏按钮关闭 / 划掉任务等被动停止不会置位。
          */
         @Volatile
         var autoStartSuppressed = false
@@ -173,8 +176,10 @@ class OverlayService : Service() {
         fun updateIntent(context: Context, depth: Int, mode: DimMode) =
             commandIntent(context, ACTION_UPDATE, depth, mode)
 
-        fun stopIntent(context: Context) =
-            Intent(context, OverlayService::class.java).setAction(ACTION_STOP)
+        fun stopIntent(context: Context, manual: Boolean = false) =
+            Intent(context, OverlayService::class.java)
+                .setAction(ACTION_STOP)
+                .putExtra(EXTRA_MANUAL_STOP, manual)
 
         fun start(context: Context, depth: Int, mode: DimMode) {
             ContextCompat.startForegroundService(context, startIntent(context, depth, mode))
@@ -184,8 +189,8 @@ class OverlayService : Service() {
             context.startService(updateIntent(context, depth, mode))
         }
 
-        fun stop(context: Context) {
-            context.startService(stopIntent(context))
+        fun stop(context: Context, manual: Boolean = false) {
+            context.startService(stopIntent(context, manual))
         }
 
         fun hostChanged(context: Context) {
