@@ -36,6 +36,8 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Tune
@@ -176,7 +178,12 @@ private fun BrandHeader(
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("暗幕", color = MaterialTheme.colorScheme.onBackground, fontSize = 25.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
-                Text("开源软件", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                Text(
+                    "开源软件",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(start = 2.dp)
+                )
             }
         }
         // 右上角无障碍快捷入口：双击直接经 Shizuku 开/关无障碍授权。
@@ -508,7 +515,7 @@ private fun DepthCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -516,7 +523,12 @@ private fun DepthCard(
                     onDepthCommit()
                 }
             ) {
-                Text("−", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    imageVector = Icons.Filled.Remove,
+                    contentDescription = "降低遮罩深度",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
             }
             Slider(
                 modifier = Modifier.weight(1f),
@@ -527,7 +539,7 @@ private fun DepthCard(
                 colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = TrackInactive)
             )
             TextButton(
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -535,7 +547,12 @@ private fun DepthCard(
                     onDepthCommit()
                 }
             ) {
-                Text("+", fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "提高遮罩深度",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
             }
         }
         val depthWarning = when {
