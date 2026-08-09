@@ -20,6 +20,8 @@ class DataStoreDimPreferences(private val context: Context) : DimPreferences {
     // 自动开启模式（0=不开启 1=悬浮窗 2=无障碍）。注意：旧版本用同前缀的 boolean 键
     // auto_start 存过开关，键类型不同不能复用，故使用独立键名。
     private val autoStartModeKey = intPreferencesKey("auto_start_mode")
+    // 首次开启遮罩时展示磁贴引导弹窗（只展示一次）
+    private val tileGuideShownKey = booleanPreferencesKey("tile_guide_shown")
     override val settings: Flow<DimSettings> = context.dimDataStore.data.map { values ->
         val mode = DimMode.entries.getOrElse(values[modeKey] ?: 0) { DimMode.NIGHT }
         val custom = DimMode.clamp(values[customDepthKey] ?: DimMode.CUSTOM.defaultDepth)
@@ -48,5 +50,13 @@ class DataStoreDimPreferences(private val context: Context) : DimPreferences {
         context.dimDataStore.edit { values ->
             values[autoStartModeKey] = mode.ordinal
         }
+    }
+    override suspend fun consumeTileGuideShown(): Boolean {
+        var first = false
+        context.dimDataStore.edit { values ->
+            first = values[tileGuideShownKey] != true
+            values[tileGuideShownKey] = true
+        }
+        return first
     }
 }

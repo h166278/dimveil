@@ -139,6 +139,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     suspend fun waitForSettings(): DimSettings = preferences.settings.first()
 
+    /** 首次开启遮罩时消费磁贴引导（仅第一次返回 true） */
+    suspend fun consumeTileGuideShown(): Boolean = preferences.consumeTileGuideShown()
+
     /** 经 Shizuku 自动开启无障碍授权；返回是否成功 */
     suspend fun enableAccessibility(): Boolean = ShizukuAccessibility.turnOn()
 

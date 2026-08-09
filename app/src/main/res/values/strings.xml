@@ -15,4 +15,10 @@
     <string name="auto_accessibility_need_manual">未检测到 Shizuku，请在系统设置中开启无障碍权限</string>
     <string name="auto_accessibility_enabled">已开启无障碍权限，重新打开暗幕时自动开启无障碍遮罩</string>
     <string name="auto_accessibility_grant_timeout">Shizuku 授权未响应，已跳转系统设置，请手动开启无障碍权限</string>
+    <string name="tile_label">暗幕</string>
+    <string name="tile_guide_title">快捷设置磁贴</string>
+    <string name="tile_guide_message">已为暗幕添加快捷设置磁贴：下拉快捷设置面板即可一键开启/关闭遮罩，无需打开应用，也不依赖通知权限（通知被关闭时依然可用）。\n\n首次使用需手动添加到面板：下拉通知栏 → 点击快捷面板底部的编辑按钮 → 将「暗幕」拖入面板。</string>
+    <string name="tile_guide_add">去添加</string>
+    <string name="tile_guide_later">稍后</string>
+    <string name="tile_guide_manual_hint">请下拉通知栏，点击快捷设置面板底部的编辑按钮，将「暗幕」拖入面板</string>
 </resources>

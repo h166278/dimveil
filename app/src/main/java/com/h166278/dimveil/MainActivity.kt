@@ -11,6 +11,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.h166278.dimveil.MainViewModel.ToggleOutcome
@@ -24,6 +26,7 @@ import com.h166278.dimveil.overlay.ShizukuAccessibility
 import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
+import com.h166278.dimveil.ui.TileGuideDialog
 import rikka.shizuku.Shizuku
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -37,6 +40,8 @@ class MainActivity : ComponentActivity() {
     private var pendingAutoAccessibilityStart = false
     /** 选择「自动无障碍」时，Shizuku 授权弹窗同意后自动开启无障碍权限 */
     private var pendingAutoAccessibilityGrant = false
+    /** 首次开启遮罩时展示磁贴引导弹窗 */
+    private var showTileGuide by mutableStateOf(false)
 
     // Shizuku 授权结果：同意后自动完成这次想做的操作，无需再操作一次
     private val shizukuPermissionListener =
@@ -75,9 +80,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
             DimVeilTheme {
+                if (showTileGuide) {
+                    TileGuideDialog(
+                        onDismiss = { showTileGuide = false },
+                        onAddTile = {
+                            showTileGuide = false
+                            openQuickSettingsPanel()
+                        }
+                    )
+                }
                 HomeScreen(
                     state = state,
                     onToggle = {
+                        val wasActive = state.active
                         if (!viewModel.toggleOverlay()) {
                             if (state.accessibilityEnabled && !state.accessibilityReady) {
                                 // 无障碍已开启但服务尚未连接（如系统重启后）：提示而非跳设置页
@@ -87,6 +102,9 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 openOverlayPermission()
                             }
+                        } else if (!wasActive) {
+                            // 遮罩从关闭到开启（首次手动开启）：介绍快捷设置磁贴
+                            maybeShowTileGuide()
                         }
                     },
                     onMode = viewModel::selectMode,
@@ -288,6 +306,31 @@ class MainActivity : ComponentActivity() {
                 Uri.parse("package:$packageName")
             )
         )
+    }
+
+    /**
+     * 首次开启遮罩时弹窗介绍快捷设置磁贴（作用 + 手动添加引导）。
+     * 平台不允许应用自动添加磁贴，只能引导用户手动拖入快捷面板。
+     */
+    private fun maybeShowTileGuide() {
+        lifecycleScope.launch {
+            if (viewModel.consumeTileGuideShown()) {
+                showTileGuide = true
+            }
+        }
+    }
+
+    /** 打开快捷设置面板（用户点击编辑按钮拖入磁贴）；低版本退回文案引导 */
+    private fun openQuickSettingsPanel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            runCatching {
+                startActivity(Intent(Settings.Panel.ACTION_QUICK_SETTINGS))
+            }.onFailure {
+                Toast.makeText(this, R.string.tile_guide_manual_hint, Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Toast.makeText(this, R.string.tile_guide_manual_hint, Toast.LENGTH_LONG).show()
+        }
     }
 
     companion object {

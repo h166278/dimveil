@@ -10,4 +10,6 @@ interface DimPreferences {
     suspend fun selectMode(mode: DimMode)
     suspend fun setDepth(depth: Int)
     suspend fun setAutoStartMode(mode: AutoStartMode)
+    /** 消费「磁贴引导已展示」标记：仅第一次调用返回 true（幂等，原子） */
+    suspend fun consumeTileGuideShown(): Boolean
 }

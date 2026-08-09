@@ -131,6 +131,7 @@ class OverlayService : Service() {
                 }
                 OverlayRuntime.running(requestedDepth, appliedDepth, mode, targetHost)
                 refreshNotification(appliedDepth)
+                DimTileService.requestUpdate(this)
             },
             onFailure = {
                 OverlayRuntime.failed(OverlayError.WINDOW_REJECTED)
@@ -153,6 +154,7 @@ class OverlayService : Service() {
         if (!preserveError) OverlayRuntime.stopped()
         if (foregroundStarted) stopForeground(STOP_FOREGROUND_REMOVE)
         foregroundStarted = false
+        DimTileService.requestUpdate(this)
         stopSelf()
     }
 
@@ -164,7 +166,10 @@ class OverlayService : Service() {
     override fun onDestroy() {
         normalController.remove()
         serviceScope.cancel()
-        if (OverlayRuntime.state.value.active) OverlayRuntime.stopped()
+        if (OverlayRuntime.state.value.active) {
+            OverlayRuntime.stopped()
+            DimTileService.requestUpdate(this)
+        }
         super.onDestroy()
     }
 
