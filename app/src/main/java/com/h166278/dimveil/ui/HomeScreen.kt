@@ -326,7 +326,7 @@ private fun OverlayStateLabel(state: MainUiState) {
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier
                             .size(14.dp)
-                            .offset(y = 2.dp)
+                            .offset(y = 4.dp)
                     )
                 }
                 Spacer(Modifier.width(6.dp))
