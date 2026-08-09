@@ -93,7 +93,6 @@ fun HomeScreen(
     onMode: (DimMode) -> Unit,
     onDepthPreview: (Int) -> Unit,
     onDepthCommit: () -> Unit,
-    onOpenAccessibility: () -> Unit,
     onDoubleTapAccessibility: () -> Unit,
     onAutoStartChange: (AutoStartMode) -> Unit
 ) {
@@ -136,9 +135,7 @@ fun HomeScreen(
             Spacer(Modifier.height(14.dp))
             AutoStartCard(
                 mode = state.autoStartMode,
-                onChange = onAutoStartChange,
-                accessibilityEnabled = accessibilityEnabled,
-                onOpenAccessibility = onOpenAccessibility
+                onChange = onAutoStartChange
             )
             Spacer(Modifier.height(20.dp))
             Text(
@@ -196,24 +193,23 @@ private fun BrandHeader(
             contentAlignment = Alignment.Center
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = if (accessibilityEnabled) 10.dp else 12.dp),
+                modifier = Modifier.padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val statusColor = if (accessibilityEnabled) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                 Icon(
                     imageVector = Icons.Filled.AccessibilityNew,
                     contentDescription = "无障碍快捷切换",
-                    tint = if (accessibilityEnabled) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    tint = statusColor,
                     modifier = Modifier.size(24.dp)
                 )
-                if (accessibilityEnabled) {
-                    Spacer(Modifier.width(5.dp))
-                    Text(
-                        "已开启",
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
+                Spacer(Modifier.width(5.dp))
+                Text(
+                    if (accessibilityEnabled) "已开启" else "未开启",
+                    color = statusColor,
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
         }
     }
@@ -295,7 +291,7 @@ private fun OverlayStateLabel(state: MainUiState) {
         state.error == OverlayError.WINDOW_REJECTED -> "系统拒绝创建遮罩，请重新授权"
         state.error == OverlayError.FOREGROUND_START_FAILED -> "前台服务启动失败，请重试"
         state.depthLimited -> "普通覆盖已安全限制为 ${state.appliedDepth}%"
-        !state.notificationsAllowed -> "通知权限未开启，请从应用内关闭遮罩"
+        !state.accessibilityEnabled -> "开启无障碍可覆盖状态栏、通知栏，获得更完整的遮罩效果"
         else -> null
     }
     if (warn != null) {
@@ -512,9 +508,7 @@ private fun DepthCard(
 @Composable
 private fun AutoStartCard(
     mode: AutoStartMode,
-    onChange: (AutoStartMode) -> Unit,
-    accessibilityEnabled: Boolean,
-    onOpenAccessibility: () -> Unit
+    onChange: (AutoStartMode) -> Unit
 ) {
     Column(
         Modifier
@@ -602,39 +596,6 @@ private fun AutoStartCard(
                         else MaterialTheme.typography.labelMedium
                     )
                 }
-            }
-        }
-        // 已授权状态已合并到右上角快捷入口；这里只保留未授权时的处理入口。
-        if (mode == AutoStartMode.ACCESSIBILITY && !accessibilityEnabled) {
-            Spacer(Modifier.height(10.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Filled.WarningAmber,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "无障碍权限未开启",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        "开启后可覆盖状态栏、通知栏；仅显示遮罩，不读取或操作屏幕。",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                TextButton(onClick = onOpenAccessibility) { Text("去开启") }
             }
         }
     }

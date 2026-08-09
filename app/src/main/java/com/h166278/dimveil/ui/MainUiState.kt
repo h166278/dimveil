@@ -14,7 +14,6 @@ data class MainUiState(
     val accessibilityEnabled: Boolean = false,
     val accessibilityReady: Boolean = false,
     val canDraw: Boolean = false,
-    val notificationsAllowed: Boolean = true,
     val normalMaxDepth: Int = 80,
     val autoStartMode: AutoStartMode = AutoStartMode.OFF,
     val error: OverlayError? = null

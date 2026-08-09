@@ -1,6 +1,5 @@
 package com.h166278.dimveil
 
-import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,7 +9,6 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,21 +33,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 class MainActivity : ComponentActivity() {
     private val viewModel by viewModels<MainViewModel>()
     private var pendingStartAfterGrant = false
-    private var notificationDeniedPermanently = false
     /** 自动开启无障碍遮罩时，Shizuku 授权弹窗同意后续跑自动开启流程 */
     private var pendingAutoAccessibilityStart = false
     /** 选择「自动无障碍」时，Shizuku 授权弹窗同意后自动开启无障碍权限 */
     private var pendingAutoAccessibilityGrant = false
-
-    private val notificationPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        // 拒绝且系统不再建议解释 = 用户已选择"不再询问"，之后不再发起无效请求
-        if (!granted && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
-            notificationDeniedPermanently = true
-        }
-        viewModel.refreshPermissions()
-    }
 
     // Shizuku 授权结果：同意后自动完成这次想做的操作，无需再操作一次
     private val shizukuPermissionListener =
@@ -91,27 +78,20 @@ class MainActivity : ComponentActivity() {
                 HomeScreen(
                     state = state,
                     onToggle = {
-                        val wasActive = state.active
-                        if (viewModel.toggleOverlay()) {
-                            if (!wasActive) {
-                                requestNotificationPermissionIfNeeded(state.notificationsAllowed)
+                        if (!viewModel.toggleOverlay()) {
+                            if (state.accessibilityEnabled && !state.accessibilityReady) {
+                                // 无障碍已开启但服务尚未连接（如系统重启后）：提示而非跳设置页
+                                Toast.makeText(this, R.string.accessibility_connecting, Toast.LENGTH_SHORT).show()
+                            } else if (state.accessibilityEnabled) {
+                                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                            } else {
+                                openOverlayPermission()
                             }
-                        } else if (state.accessibilityEnabled && !state.accessibilityReady) {
-                            // 无障碍已开启但服务尚未连接（如系统重启后）：提示而非跳设置页
-                            Toast.makeText(this, R.string.accessibility_connecting, Toast.LENGTH_SHORT).show()
-                        } else if (state.accessibilityEnabled) {
-                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                        } else {
-                            openOverlayPermission()
                         }
                     },
                     onMode = viewModel::selectMode,
                     onDepthPreview = viewModel::previewDepth,
                     onDepthCommit = viewModel::commitDepth,
-                    onOpenAccessibility = {
-                        if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn(this)
-                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    },
                     onDoubleTapAccessibility = { performAccessibilityToggle() },
                     onAutoStartChange = { mode ->
                         viewModel.setAutoStartMode(mode)
@@ -308,14 +288,6 @@ class MainActivity : ComponentActivity() {
                 Uri.parse("package:$packageName")
             )
         )
-    }
-
-    private fun requestNotificationPermissionIfNeeded(alreadyAllowed: Boolean) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !alreadyAllowed && !notificationDeniedPermanently
-        ) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
     }
 
     companion object {

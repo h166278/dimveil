@@ -4,11 +4,8 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityManager
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.h166278.dimveil.data.DataStoreDimPreferences
@@ -46,8 +43,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private data class Permissions(
         val canDraw: Boolean = false,
-        val accessibilityEnabled: Boolean = false,
-        val notificationsAllowed: Boolean = true
+        val accessibilityEnabled: Boolean = false
     )
 
     private val app = application.applicationContext
@@ -100,7 +96,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             accessibilityEnabled = permission.accessibilityEnabled,
             accessibilityReady = accessibilityReady,
             canDraw = permission.canDraw,
-            notificationsAllowed = permission.notificationsAllowed,
             normalMaxDepth = OverlayController.normalMaxDepth(app),
             autoStartMode = presented.autoStartMode,
             error = overlay.error
@@ -114,8 +109,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshPermissions() {
         permissions.value = Permissions(
             canDraw = OverlayService.canDraw(app),
-            accessibilityEnabled = isAccessibilityEnabled(),
-            notificationsAllowed = notificationsAllowed()
+            accessibilityEnabled = isAccessibilityEnabled()
         )
     }
 
@@ -227,10 +221,4 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
-    private fun notificationsAllowed(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(
-                app,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
 }
