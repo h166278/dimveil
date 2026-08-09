@@ -126,18 +126,19 @@ fun HomeScreen(
             OverlayStateLabel(state = state)
             Spacer(Modifier.height(14.dp))
             ModeRow(mode = mode, onMode = onMode)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(14.dp))
             DepthCard(
                 depth = depth,
                 onDepthPreview = onDepthPreview,
                 onDepthCommit = onDepthCommit
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(14.dp))
             AutoStartCard(
                 mode = state.autoStartMode,
                 onChange = onAutoStartChange
             )
-            Spacer(Modifier.height(14.dp))
+            // 保留底部呼吸空间，让版本与隐私承诺落在首屏下方留白中。
+            Spacer(Modifier.height(48.dp))
             Text(
                 "暗幕 v${BuildConfig.VERSION_NAME} · 离线无追踪",
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
