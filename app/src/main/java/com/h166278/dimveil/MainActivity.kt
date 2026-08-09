@@ -324,7 +324,9 @@ class MainActivity : ComponentActivity() {
     private fun openQuickSettingsPanel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             runCatching {
-                startActivity(Intent(Settings.Panel.ACTION_QUICK_SETTINGS))
+                // Settings.Panel.ACTION_QUICK_SETTINGS 在部分构建环境解析异常，
+                // 直接使用其公开常量值（API 30+），行为等价
+                startActivity(Intent("android.settings.panel.action.QUICK_SETTINGS"))
             }.onFailure {
                 Toast.makeText(this, R.string.tile_guide_manual_hint, Toast.LENGTH_LONG).show()
             }
