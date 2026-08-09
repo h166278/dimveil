@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -512,9 +511,7 @@ private fun DepthCard(
         val view = LocalView.current
         Box(Modifier.fillMaxWidth()) {
             Slider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
+                modifier = Modifier.fillMaxWidth(),
                 value = depth.toFloat(),
                 onValueChange = { onDepthPreview(it.toInt()) },
                 onValueChangeFinished = onDepthCommit,
@@ -528,7 +525,6 @@ private fun DepthCard(
             TextButton(
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = (-8).dp)
                     .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
@@ -547,7 +543,6 @@ private fun DepthCard(
             TextButton(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .offset(x = 8.dp)
                     .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
