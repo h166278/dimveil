@@ -24,7 +24,6 @@ import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
 import rikka.shizuku.Shizuku
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -141,16 +140,16 @@ class MainActivity : ComponentActivity() {
             // - 遮罩运行中（active=true）→ 不重复启动；
             // - 主页主开关手动关闭过 → 本次进程不再自动开启；
             // - 划掉任务重开 / 通知栏按钮关闭后回前台 → 自动开启。
-            // 用 first { it.loaded } 跳过 stateIn 默认值：DataStore 异步读取完成前，
-            // uiState 缓存的是默认 MainUiState（autoStart=false），直接 first() 会立即
-            // 返回默认值导致冷启动漏触发；loaded=true 只在真实设置发射后出现。
+            // 直接等 DataStore 真实设置（waitForSettings）：uiState 的 settings 是
+            // stateIn(Eagerly)，会先发射默认 autoStart=false，冷启动时 first(loaded)
+            // 会命中假值导致漏触发；DataStore 原始 flow 首次发射即磁盘真实值。
             lifecycleScope.launch {
-                val s = viewModel.uiState.first { it.loaded }
-                if (s.autoStart && !OverlayService.autoStartSuppressed &&
+                val saved = viewModel.waitForSettings()
+                if (saved.autoStart && !OverlayService.autoStartSuppressed &&
                     !OverlayRuntime.state.value.active &&
-                    (OverlayService.canDraw(this@MainActivity) || s.accessibilityReady)
+                    (OverlayService.canDraw(this@MainActivity) || viewModel.uiState.value.accessibilityReady)
                 ) {
-                    OverlayService.start(this@MainActivity, s.depth, s.mode)
+                    OverlayService.start(this@MainActivity, saved.depth, saved.mode)
                 }
             }
         }

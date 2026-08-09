@@ -16,8 +16,6 @@ data class MainUiState(
     val notificationsAllowed: Boolean = true,
     val normalMaxDepth: Int = 80,
     val autoStart: Boolean = false,
-    /** DataStore 设置是否已加载完成（stateIn 默认值 vs 真实值区分标志） */
-    val loaded: Boolean = false,
     val error: OverlayError? = null
 ) {
     val canStart: Boolean get() = accessibilityReady || canDraw

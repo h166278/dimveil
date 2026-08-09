@@ -24,6 +24,7 @@ import com.h166278.dimveil.ui.MainUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -101,7 +102,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             notificationsAllowed = permission.notificationsAllowed,
             normalMaxDepth = OverlayController.normalMaxDepth(app),
             autoStart = presented.autoStart,
-            loaded = true,
             error = overlay.error
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MainUiState())
@@ -136,6 +136,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             preferences.setAutoStart(enabled)
         }
     }
+
+    /**
+     * 等待 DataStore 设置读取完成。
+     * 直接订阅 DataStore 原始 flow（冷流，首次发射即磁盘真实值，无默认值），
+     * 不用 stateIn 的 settings——后者 Eagerly 会先发默认 DimSettings()，无法与真实值区分。
+     */
+    suspend fun waitForSettings(): DimSettings = preferences.settings.first()
 
     /**
      * 双击空白处切换无障碍授权（等价系统无障碍快捷方式）：
