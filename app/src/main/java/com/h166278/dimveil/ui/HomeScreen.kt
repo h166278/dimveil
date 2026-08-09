@@ -527,7 +527,9 @@ private fun DepthCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .offset(x = (-15).dp)
+                    .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
@@ -555,7 +557,9 @@ private fun DepthCard(
                 )
             )
             TextButton(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .offset(x = 15.dp)
+                    .size(40.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                 onClick = {
                     view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
