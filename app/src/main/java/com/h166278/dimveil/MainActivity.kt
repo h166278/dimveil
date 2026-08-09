@@ -24,6 +24,7 @@ import com.h166278.dimveil.service.OverlayService
 import com.h166278.dimveil.ui.DimVeilTheme
 import com.h166278.dimveil.ui.HomeScreen
 import rikka.shizuku.Shizuku
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -85,7 +86,8 @@ class MainActivity : ComponentActivity() {
                         if (!state.accessibilityEnabled) AccessibilityOverlayHost.armAutoReturn(this)
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     },
-                    onDoubleTapAccessibility = { performAccessibilityToggle() }
+                    onDoubleTapAccessibility = { performAccessibilityToggle() },
+                    onAutoStartChange = viewModel::setAutoStart
                 )
             }
         }
@@ -133,6 +135,17 @@ class MainActivity : ComponentActivity() {
             if (OverlayService.canDraw(this) && !OverlayRuntime.state.value.active) {
                 val s = viewModel.uiState.value
                 OverlayService.start(this, s.depth, s.mode)
+            }
+        }
+        // 「进入自动开启遮罩」：回到前台、未运行且具备覆盖权限时自动启动。
+        // uiState 首个值由 DataStore 异步读取，必须等流发射后再判断，
+        // 否则冷启动时读到默认值会漏触发；canDraw 直接同步查系统权限保证实时。
+        lifecycleScope.launch {
+            val s = viewModel.uiState.first()
+            if (s.autoStart && !OverlayRuntime.state.value.active &&
+                (OverlayService.canDraw(this@MainActivity) || s.accessibilityReady)
+            ) {
+                OverlayService.start(this@MainActivity, s.depth, s.mode)
             }
         }
     }

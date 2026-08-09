@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Shield
@@ -46,6 +47,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -91,7 +94,8 @@ fun HomeScreen(
     onDepthPreview: (Int) -> Unit,
     onDepthCommit: () -> Unit,
     onOpenAccessibility: () -> Unit,
-    onDoubleTapAccessibility: () -> Unit
+    onDoubleTapAccessibility: () -> Unit,
+    onAutoStartChange: (Boolean) -> Unit
 ) {
     var showAccessibility by remember { mutableStateOf(false) }
     val active = state.active
@@ -134,6 +138,11 @@ fun HomeScreen(
             StatusCard(
                 state = state,
                 onOpenAccessibility = { showAccessibility = true }
+            )
+            Spacer(Modifier.height(14.dp))
+            AutoStartCard(
+                enabled = state.autoStart,
+                onChange = onAutoStartChange
             )
             Spacer(Modifier.height(20.dp))
             Text(
@@ -542,5 +551,60 @@ private fun StatusCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AutoStartCard(
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Filled.Bolt,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                "进入自动开启遮罩",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                "打开暗幕时自动启动遮罩",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Switch(
+            checked = enabled,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
     }
 }

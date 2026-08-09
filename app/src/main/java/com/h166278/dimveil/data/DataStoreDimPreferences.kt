@@ -15,10 +15,16 @@ class DataStoreDimPreferences(private val context: Context) : DimPreferences {
     private val modeKey = intPreferencesKey("mode")
     private val depthKey = intPreferencesKey("depth")
     private val customDepthKey = intPreferencesKey("custom_depth")
+    private val autoStartKey = booleanPreferencesKey("auto_start")
     override val settings: Flow<DimSettings> = context.dimDataStore.data.map { values ->
         val mode = DimMode.entries.getOrElse(values[modeKey] ?: 0) { DimMode.NIGHT }
         val custom = DimMode.clamp(values[customDepthKey] ?: DimMode.CUSTOM.defaultDepth)
-        DimSettings(mode, DimMode.clamp(values[depthKey] ?: mode.depth(custom)), custom)
+        DimSettings(
+            mode,
+            DimMode.clamp(values[depthKey] ?: mode.depth(custom)),
+            custom,
+            values[autoStartKey] ?: false
+        )
     }
     override suspend fun selectMode(mode: DimMode) {
         context.dimDataStore.edit { values ->
@@ -32,6 +38,11 @@ class DataStoreDimPreferences(private val context: Context) : DimPreferences {
             val safe = DimMode.clamp(depth)
             values[depthKey] = safe
             if (DimMode.entries.getOrElse(values[modeKey] ?: 0) { DimMode.NIGHT } == DimMode.CUSTOM) values[customDepthKey] = safe
+        }
+    }
+    override suspend fun setAutoStart(enabled: Boolean) {
+        context.dimDataStore.edit { values ->
+            values[autoStartKey] = enabled
         }
     }
 }

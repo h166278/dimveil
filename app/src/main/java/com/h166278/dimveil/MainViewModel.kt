@@ -78,7 +78,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 saved.depth
             },
-            customDepth = saved.customDepth
+            customDepth = saved.customDepth,
+            autoStart = saved.autoStart
         )
     }
 
@@ -99,6 +100,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             canDraw = permission.canDraw,
             notificationsAllowed = permission.notificationsAllowed,
             normalMaxDepth = OverlayController.normalMaxDepth(app),
+            autoStart = presented.autoStart,
             error = overlay.error
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MainUiState())
@@ -124,6 +126,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (!state.canStart) return false
         OverlayService.start(app, state.depth, state.mode)
         return true
+    }
+
+    /** 开关「进入软件自动开启遮罩」，持久化到 DataStore */
+    fun setAutoStart(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setAutoStart(enabled)
+        }
     }
 
     /**

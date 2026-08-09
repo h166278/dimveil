@@ -15,6 +15,7 @@ data class MainUiState(
     val canDraw: Boolean = false,
     val notificationsAllowed: Boolean = true,
     val normalMaxDepth: Int = 80,
+    val autoStart: Boolean = false,
     val error: OverlayError? = null
 ) {
     val canStart: Boolean get() = accessibilityReady || canDraw
