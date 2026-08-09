@@ -98,6 +98,8 @@ class MainActivity : ComponentActivity() {
                                 // 无障碍已开启但服务尚未连接（如系统重启后）：提示而非跳设置页
                                 Toast.makeText(this, R.string.accessibility_connecting, Toast.LENGTH_SHORT).show()
                             } else if (state.accessibilityEnabled) {
+                                // 记录自动返回：服务连接后把暗幕带回前台
+                                AccessibilityOverlayHost.armAutoReturn(this)
                                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                             } else {
                                 openOverlayPermission()

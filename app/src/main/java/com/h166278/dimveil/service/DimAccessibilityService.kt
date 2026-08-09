@@ -42,11 +42,14 @@ class DimAccessibilityService : AccessibilityService() {
     private fun restoreTask(taskId: Int) {
         val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appTask = am.appTasks.firstOrNull { it.taskInfo.id == taskId }
-        if (appTask != null) {
+        val moved = appTask != null && runCatching {
             // 复用原任务，避免后台 startActivity 被 MIUI 等系统拦截
             appTask.moveToFront()
-        } else {
-            // 原任务已被清理（如系统回收）：新建任务带回
+            true
+        }.getOrDefault(false)
+        if (moved) return
+        // 原任务已被清理（如系统回收）或 moveToFront 受限：新建任务带回
+        runCatching {
             startActivity(
                 Intent(this, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)

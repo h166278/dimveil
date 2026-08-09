@@ -3,10 +3,11 @@ package com.h166278.dimveil.overlay
 import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import java.lang.ref.WeakReference
+import com.h166278.dimveil.MainActivity
 
 /**
  * 悬浮窗授权自动返回：跳转系统授权页（ACTION_MANAGE_OVERLAY_PERMISSION）前 arm，
@@ -14,6 +15,10 @@ import java.lang.ref.WeakReference
  *
  * 使用 Handler 而非 lifecycleScope：授权页覆盖本应用时 Activity 处于 STOPPED，
  * lifecycle 感知协程会被暂停，无法轮询。
+ *
+ * 注意：轮询不依赖 Activity 实例存活（快照 applicationContext + taskId）——
+ * MIUI 等系统在权限页覆盖期间可能回收本应用 Activity，若轮询持有旧实例
+ * 引用会在 isDestroyed 时停摆，导致授权成功也无法自动返回。
  */
 object OverlayPermissionAutoReturn {
     private const val POLL_INTERVAL_MS = 400L
@@ -28,7 +33,9 @@ object OverlayPermissionAutoReturn {
         deadline = System.currentTimeMillis() + timeoutMillis
         if (polling) return
         polling = true
-        val activityRef = WeakReference(activity)
+        // 快照上下文与任务 id：Activity 在权限页期间被回收也不影响恢复
+        val appContext = activity.applicationContext
+        val taskId = activity.taskId
         handler.post(object : Runnable {
             override fun run() {
                 if (!polling) return
@@ -36,17 +43,9 @@ object OverlayPermissionAutoReturn {
                     polling = false
                     return
                 }
-                val owner = activityRef.get()
-                if (owner == null || owner.isFinishing || owner.isDestroyed) {
+                if (Settings.canDrawOverlays(appContext)) {
                     polling = false
-                    return
-                }
-                if (Settings.canDrawOverlays(owner)) {
-                    polling = false
-                    // 不从后台启动新 Activity；直接把本应用任务带回前台。
-                    val am = owner.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-                    val appTask = am.appTasks.firstOrNull { it.taskInfo.id == owner.taskId }
-                    appTask?.moveToFront()
+                    restoreTask(appContext, taskId)
                     return
                 }
                 handler.postDelayed(this, POLL_INTERVAL_MS)
@@ -58,5 +57,25 @@ object OverlayPermissionAutoReturn {
     fun disarm() {
         polling = false
         deadline = 0
+    }
+
+    /** 恢复暗幕任务到前台；任务丢失或 moveToFront 被 ROM 限制时兜底新建任务 */
+    private fun restoreTask(context: Context, taskId: Int) {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appTask = am.appTasks.firstOrNull { it.taskInfo.id == taskId }
+        val moved = appTask != null && runCatching {
+            // 移动自己的任务到前台不需要后台启动权限（Android 10+）
+            appTask.moveToFront()
+            true
+        }.getOrDefault(false)
+        if (moved) return
+        // 原任务不可用：新建任务带回前台（MIUI 可能拦截后台启动，尽力而为）
+        runCatching {
+            context.startActivity(
+                Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                }
+            )
+        }
     }
 }
