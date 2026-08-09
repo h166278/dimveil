@@ -3,20 +3,10 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 深夜底色：保持启动器中的克制工具感 -->
-    <path
-        android:fillColor="#080D0F"
-        android:pathData="M26,0L82,0A26,26 0 0 1 108,26L108,82A26,26 0 0 1 82,108L26,108A26,26 0 0 1 0,82L0,26A26,26 0 0 1 26,0Z" />
-    <!-- 白色粗月牙：品牌主体 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M48,24A30,30 0 1 1 47.99,24Z" />
-    <!-- 第一层暗幕：厚实、圆角的收拢弧片，不再使用圆形天体 -->
-    <path
-        android:fillColor="#182523"
-        android:pathData="M61,25C75,30 83,41 83,54C83,67 75,78 61,83C67,75 70,65 70,54C70,43 67,33 61,25Z" />
-    <!-- 第二层暗幕：向右错开，保留遮幕正在合拢的方向感 -->
-    <path
-        android:fillColor="#0E1717"
-        android:pathData="M76,29C87,35 93,44 93,54C93,64 87,73 76,79C82,72 85,63 85,54C85,45 82,36 76,29Z" />
+    <!-- 深黑底色，与暗幕主界面统一 -->
+    <path android:fillColor="#080D0F" android:pathData="M26,0L82,0A26,26 0 0 1 108,26L108,82A26,26 0 0 1 82,108L26,108A26,26 0 0 1 0,82L0,26A26,26 0 0 1 26,0Z" />
+    <!-- 后方月球：只露出左侧厚月牙 -->
+    <path android:fillColor="#F7F8F6" android:pathData="M47,18A36,36 0 1 1 46.99,18Z" />
+    <!-- 前方更大的黑色遮挡球：明确表达暗幕正在遮住光 -->
+    <path android:fillColor="#020405" android:pathData="M61,14A41,41 0 1 1 60.99,14Z" />
 </vector>
