@@ -315,14 +315,24 @@ private fun OverlayStateLabel(state: MainUiState) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.height(20.dp)
             ) {
-                Icon(
-                    Icons.Filled.WarningAmber,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(14.dp)
-                )
+                Box(
+                    modifier = Modifier.size(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.WarningAmber,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
                 Spacer(Modifier.width(6.dp))
-                Text(warn, color = MaterialTheme.colorScheme.tertiary, fontSize = 12.sp)
+                Text(
+                    warn,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontSize = 12.sp,
+                    maxLines = 1
+                )
             }
         }
     }
